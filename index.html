@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>장운5공장 통합 ERP 시스템</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
+        
+        /* 🔐 로그인 섹션 스타일 */
+        .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .login-card h2 { margin-top: 0; color: #1e3a8a; margin-bottom: 25px; }
+        
+        /* ⚙️ 내부 ERP 레이아웃 */
+        #erp-main-content { display: none; } 
+        .erp-header { background: #1e3a8a; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .erp-header h1 { margin: 0; font-size: 22px; font-weight: bold; }
+        .btn-logout { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        
+        /* 🌐 메인 내비게이션 바 */
+        .erp-nav { display: flex; gap: 10px; background: #e2e8f0; padding: 8px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .nav-item { padding: 10px 16px; background: white; border-radius: 6px; font-weight: bold; font-size: 14px; color: #475569; cursor: pointer; border: 1px solid #cbd5e1; transition: all 0.2s; }
+        .nav-item.active { background: #1e3a8a; color: white; border-color: #1e3a8a; }
+        
+        /* 📂 하위 서브 메뉴 공통 스타일 */
+        .erp-sub-nav { display: none; gap: 8px; background: #cbd5e1; padding: 6px; border-radius: 6px; margin-bottom: 20px; }
+        .sub-nav-item { padding: 8px 14px; background: #f8fafc; border-radius: 4px; font-weight: bold; font-size: 13px; color: #334155; cursor: pointer; border: 1px solid #94a3b8; }
+        .sub-nav-item.active { background: #2563eb; color: white; border-color: #2563eb; }
+        
+        /* 레이아웃 구조 */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 25px; margin-bottom: 25px; }
+        @media (min-width: 1280px) { .dashboard-grid { grid-template-columns: 390px 1fr; } .full-width { grid-column: span 2; } }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); height: fit-content; }
+        .card-title { font-size: 16px; font-weight: bold; color: #1e3a8a; margin-bottom: 15px; border-left: 4px solid #2563eb; padding-left: 8px; }
+        
+        .erp-section { display: none; }
+        
+        /* 달력 스타일 지정 */
+        .calendar-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .calendar-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+        .calendar-title { font-size: 20px; font-weight: bold; color: #1e3a8a; margin: 0; }
+        .calendar-selectors { display: flex; gap: 8px; }
+        .calendar-selectors select { padding: 6px 12px; font-size: 14px; font-weight: bold; border: 2px solid #2563eb; border-radius: 6px; color: #1e3a8a; background: white; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+        .calendar-day-header { text-align: center; font-weight: bold; padding: 10px; background: #e2e8f0; color: #475569; border-radius: 4px; font-size: 13px; }
+        .calendar-day-header.sun { color: #dc2626; background: #fee2e2; }
+        .calendar-day-header.sat { color: #2563eb; background: #dbeafe; }
+        .calendar-cell { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 95px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
+        .calendar-cell.empty { background: #f1f5f9; border: 1px dashed #e2e8f0; }
+        .day-num { font-weight: bold; font-size: 14px; color: #334155; }
+        .calendar-cell.sun .day-num { color: #dc2626; }
+        .calendar-cell.sat .day-num { color: #2563eb; }
+        
+        /* 테이블 */
+        .table-wrapper { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: bold; }
+        tr:hover { background-color: #f8fafc; }
+        .text-right { text-align: right; }
+        
+        .form-control { display: flex; flex-direction: column; margin-bottom: 12px; }
+        .form-control label { font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: bold; }
+        .form-control input, .form-control select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box; width: 100%; }
+        .btn { background-color: #2563eb; color: white; border: none; padding: 11px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 14px; }
+        .btn:hover { background-color: #1d4ed8; }
+        
+        /* 스마트 필터 상자 스타일 */
+        .filter-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+
+        /* 📄 아이콘 버튼 양식 */
+        .icon-btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .icon-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; color: white; font-size: 14px; }
+        .btn-print { background-color: #1e3a8a; }
+        .btn-pdf { background-color: #dc2626; }
+        .icon-btn:hover { opacity: 0.9; }
+
+        /* 거래명세표 박스 레이아웃 */
+        .statement-box { background: #fff; border: 2px solid #1e3a8a; padding: 25px; margin-top: 15px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .statement-title { font-size: 26px; font-weight: bold; text-align: center; color: #1e3a8a; letter-spacing: 8px; margin-bottom: 15px; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div id="login-section" class="login-wrapper">
+        <div class="login-card">
+            <h2>장운5공장 ERP 로그인</h2>
+            <form id="loginForm">
+                <div class="form-control" style="text-align: left;"><label>사용자 아이디 (ID)</label><input type="text" id="userId" value="admin" required></div>
+                <div class="form-control" style="text-align: left;"><label>비밀번호 (Password)</label><input type="password" id="userPw" value="1234" required></div>
+                <button type="submit" class="btn" style="background:#1e3a8a; padding: 13px;">시스템 보안 로그인</button>
+            </form>
+            <p style="font-size:12px; color:#64748b; margin-top:15px;">초기 정보: admin / 1234</p>
+        </div>
+    </div>
+
+    <div id="erp-main-content">
+        <div class="erp-header">
+            <h1>🏭 장운5공장 통합 관리 시스템 (ERP) <span>V4.5 (안정화 버전)</span></h1>
+            <button class="btn-logout" id="btnLogout">🔒 로그아웃</button>
+        </div>
+
+        <div class="erp-nav">
+            <div class="nav-item active" id="menu-dash">🏠 종합 대시보드 (달력)</div>
+            <div class="nav-item" id="menu-buy">🛒 구매 / 입고 관리</div>
+            <div class="nav-item" id="menu-prod">🔧 생산 공정 관리</div>
+            <div class="nav-item" id="menu-ship">🚛 출하 / 영업 관리</div>
+            <div class="nav-item" id="menu-quality">⚠️ 품질 불량 관리</div>
+            <div class="nav-item" id="menu-system">⚙️ 시스템 관리</div>
+        </div>
+
+        <div class="erp-sub-nav" id="prodSubNav">
+            <div class="sub-nav-item active" id="sub-order">📋 발주내용</div>
+            <div class="sub-nav-item" id="sub-plan">📅 생산계획</div>
+            <div class="sub-nav-item" id="sub-direct">📢 생산지시</div>
+            <div class="sub-nav-item" id="sub-report">📝 생산일보 (부족/불량분석)</div>
+        </div>
+
+        <div class="erp-sub-nav" id="shipSubNav">
+            <div class="sub-nav-item active" id="sub-ship-report">📝 출하일보입력</div>
+            <div class="sub-nav-item" id="sub-ship-schedule">📅 출하일정</div>
+            <div class="sub-nav-item" id="sub-ship-car">🚚 차량관리 (유지비)</div>
+            <div class="sub-nav-item" id="sub-ship-bill">📄 명세표등록/출력</div>
+        </div>
+
+        <div id="section-dash" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">📊 실시간 공장 현황 코어</div>
+                    <p style="font-size:13px; color:#475569; line-height: 1.5;">성공적으로 로그인되었습니다. 아래 달력현황과 실시간 품목고를 파악하여 공장 가동률을 최적화하세요.</p>
+                </div>
+                
+                <div class="calendar-box">
+                    <div class="calendar-header-bar">
+                        <div class="calendar-title">📅 자금 흐름 현황판 (매입 vs 매출)</div>
+                        <div class="calendar-selectors">
+                            <select id="yearSelect" onchange="renderCalendar()"><option value="2026" selected>2026년</option></select>
+                            <select id="monthSelect" onchange="renderCalendar()">
+                                <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+                                <option value="4">4월</option><option value="5" selected>5월</option><option value="6">6월</option>
+                                <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+                                <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+
+                <div class="card full-width">
+                    <div class="card-title">📊 실시간 품목별 창고 현재고 실적표</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">생산/입고량</th><th class="text-right">출하 차감량</th><th class="text-right">현재고</th></tr>
+                            </thead>
+                            <tbody id="inventoryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-buy" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">🛒 자재 / 부자재 / 원재료 입고 등록</div>
+                    <form id="buyForm">
+                        <div class="form-control">
+                            <label>자재 구분</label>
+                            <select id="buyClass" required>
+                                <option value="원재료">💎 원재료 (사출 수지/레진 등)</option>
+                                <option value="자재">📦 자재 (기본 부품류)</option>
+                                <option value="부자재">🎗️ 부자재 (박스, 테이프, 라벨 등)</option>
+                            </select>
+                        </div>
+                        <div class="form-control"><label>외주처 / 공급사</label><input type="text" id="buyCompany" value="롯데케미칼" required></div>
+                        <div class="form-control"><label>품번 선택</label><select id="buyItemSelect" required></select></div>
+                        <div class="form-control"><label>입고 수량(개/kg)</label><input type="number" id="buyQty" required></div>
+                        <div class="form-control"><label>입고 일자</label><input type="date" id="buyDate" value="2026-05-27" required></div>
+                        <div class="form-control"><label>로트번호(LOT)</label><input type="text" id="buyLot" value="LOT-MAT-20260527" required></div>
+                        <button type="submit" class="btn">자재 창고 입고 확정</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">📋 자재/부자재/원재료 입고 대장 원장</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>입고일자</th><th>구분</th><th>외주처</th><th>품번</th><th class="text-right">입고수량</th><th>LOT</th></tr></thead>
+                            <tbody id="buyTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-order" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">📝 신규 고객사 발주 등록</div>
+                    <form id="orderForm">
+                        <div class="form-control"><label>발주처(고객사)</label><input type="text" id="ordCompany" value="현대모비스" required></div>
+                        <div class="form-control"><label>품번/품명 선택</label><select id="ordItemSelect" onchange="syncOrderPrice()" required></select></div>
+                        <div class="form-control"><label>계약 단가(원)</label><input type="number" id="ordPrice" readonly></div>
+                        <div class="form-control"><label>발주 수량</label><input type="number" id="ordQty" required></div>
+                        <div class="form-control"><label>납기일</label><input type="date" id="ordDate" value="2026-06-05" required></div>
+                        <button type="submit" class="btn">발주서 접수 등록</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">📋 수주 및 발주내용 모니터링 현황</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>납기일</th><th>발주처</th><th>품번</th><th class="text-right">단가</th><th class="text-right">발주수량</th></tr></thead>
+                            <tbody id="orderTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="section-plan" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">📅 생산계획 수립</div>
+                    <form id="planForm">
+                        <div class="form-control"><label>작업 사출기</label><select id="planMachine" required></select></div>
+                        <div class="form-control"><label>대상 품번</label><select id="planItemSelect" required></select></div>
+                        <div class="form-control"><label>계획 수량</label><input type="number" id="planQty" required></div>
+                        <div class="form-control"><label>계획 일자</label><input type="date" id="planDate" value="2026-05-28" required></div>
+                        <button type="submit" class="btn">계획 반영</button>
+                    </form>
+                </div>
+                <div class="card"><div class="card-title">🗓️ 주간 생산 계획표</div><div class="table-wrapper"><table><thead><tr><th>계획일자</th><th>설비구분</th><th>품번</th><th class="text-right">계획수량</th></tr></thead><tbody id="planTableBody"></tbody></table></div></div>
+            </div>
+        </div>
+
+        <div id="section-direct" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">📢 현장 생산지시서 발행</div>
+                    <form id="directForm">
+                        <div class="form-control"><label>지시 사출기</label><select id="directMachine" required></select></div>
+                        <div class="form-control"><label>지시 품번</label><select id="directItemSelect" required></select></div>
+                        <div class="form-control"><label>지시 수량</label><input type="number" id="directQty" required></div>
+                        <div class="form-control"><label>지시 일자</label><input type="date" id="directDate" value="2026-05-28" required></div>
+                        <button type="submit" class="btn" style="background:#d97706;">생산지시 투입</button>
+                    </form>
+                </div>
+                <div class="card"><div class="card-title">📢 실시간 생산 지시 원장</div><div class="table-wrapper"><table><thead><tr><th>지시일자</th><th>설비구분</th><th>품번</th><th class="text-right">지시수량</th></tr></thead><tbody id="directTableBody"></tbody></table></div></div>
+            </div>
+        </div>
+
+        <div id="section-report" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">📝 당일 생산실적 마감</div>
+                    <form id="reportForm">
+                        <div class="form-control"><label>생산 사출기</label><select id="reportMachine" required></select></div>
+                        <div class="form-control"><label>생산 품번</label><select id="reportItemSelect" required></select></div>
+                        <div class="form-control"><label>실제 완료 총생산량 (양품+불량)</label><input type="number" id="reportQty" required></div>
+                        <div class="form-control"><label>⚠️ 이 중 불량 수량 (개)</label><input type="number" id="reportBadQty" value="0" required></div>
+                        <div class="form-control"><label>생산 일자</label><input type="date" id="reportDate" value="2026-05-27" required></div>
+                        <button type="submit" class="btn" style="background:#16a34a;">생산일보 기록</button>
+                    </form>
+                </div>
+                <div class="card"><div class="card-title">🚨 부족/불량 실시간 분석판</div><div class="table-wrapper"><table><thead><tr><th>생산일자</th><th>설비</th><th>품번</th><th class="text-right">양품량</th><th class="text-right">불량량</th><th class="text-right">발주과부족</th></tr></thead><tbody id="reportTableBody"></tbody></table></div></div>
+            </div>
+        </div>
+
+        <div id="section-ship-report" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">🚛 출하 실적 등록 입력창</div>
+                    <form id="shipForm">
+                        <div class="form-control"><label>외주처 / 고객사</label><input type="text" id="shipCompany" value="공조인라인" required></div>
+                        <div class="form-control"><label>출하 대상 품번</label><select id="shipItemSelect" onchange="syncShipPrice()" required></select></div>
+                        <div class="form-control"><label>출하 단가 (자동입력)</label><input type="number" id="shipPrice" readonly></div>
+                        <div class="form-control"><label>출하 수량 (개)</label><input type="number" id="shipQty" required></div>
+                        <div class="form-control"><label>로트번호(LOT)</label><input type="text" id="shipLot" value="LOT-SH-20260527" required></div>
+                        <div class="form-control"><label>출하 날짜</label><input type="date" id="shipDate" value="2026-05-27" required></div>
+                        
+                        <div class="form-control">
+                            <label>📦 매칭 포장 박스명/정보 기입</label>
+                            <select id="shipBoxName">
+                                <option value="BOX-KA4-01 (KA4 전용 카톤대형)">BOX-KA4-01 (KA4 전용 카톤대형)</option>
+                                <option value="BOX-NQ5-중형 (NQ5 부품용)">BOX-NQ5-중형 (NQ5 부품용)</option>
+                                <option value="BOX-공용-소형 (기타 소물 부품)">BOX-공용-소형 (기타 소물 부품)</option>
+                                <option value="철재 파레트 반납형">철재 파레트 반납형</option>
+                            </select>
+                        </div>
+
+                        <div class="form-control">
+                            <label>배송 차량번호 선택 (드롭박스)</label>
+                            <select id="shipCarNo" required>
+                                <option value="장운 1호차 (1톤)">장운 1호차 (1톤)</option>
+                                <option value="장운 2호차 (2.5톤)">장운 2호차 (2.5톤)</option>
+                                <option value="장운 3호차 (5톤윙바디)">장운 3호차 (5톤윙바디)</option>
+                                <option value="장운 5호차 (지게차팀)">장운 5호차 (지게차팀)</option>
+                                <option value="용차 (외부 화물)">용차 (외부 화물)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn" style="background:#16a34a;">고객사 완제품 출하 확정</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">📋 완제품 출하일보 기록 원장</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>출하일자</th><th>외주처</th><th>품번</th><th class="text-right">수량</th><th class="text-right">단가</th><th>차량번호</th><th>📦 적용박스명</th><th>LOT</th></tr>
+                            </thead>
+                            <tbody id="shipTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-ship-schedule" class="erp-section">
+            <div class="card full-width">
+                <div class="card-title">📅 완제품 영업 및 출하 일정 스케줄러 (조건 검색 필터링)</div>
+                
+                <div class="filter-box">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #475569;">🏢 거래처/외주처명 검색</label>
+                        <input type="text" id="filterCompany" placeholder="예: 공조인라인 (빈칸 시 전체조회)" oninput="renderShipTable()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; width: 100%; margin-top:4px;">
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #475569;">📅 특정 출하 날짜 지정</label>
+                        <input type="date" id="filterDate" onchange="renderShipTable()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; width: 100%; margin-top:4px;">
+                    </div>
+                    <button type="button" class="btn" onclick="resetShipFilter()" style="margin: 0; width: auto; padding: 9px 15px; background: #64748b;">🔄 필터 초기화</button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>출하 확정일</th><th>납품처(외주처)</th><th>품번</th><th>품명</th><th class="text-right">출하수량</th><th>지정 차량</th><th>📦 포장 박스명</th></tr>
+                        </thead>
+                        <tbody id="shipScheduleTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-ship-car" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">💸 배송 설비 차량 유지비용 지출 등록</div>
+                    <form id="carForm">
+                        <div class="form-control">
+                            <label>대상 차량 선택</label>
+                            <select id="carSelect" required>
+                                <option value="장운 1호차">장운 1호차</option>
+                                <option value="장운 2호차">장운 2호차</option>
+                                <option value="장운 3호차">장운 3호차</option>
+                                <option value="장운 5호차">장운 5호차</option>
+                            </select>
+                        </div>
+                        <div class="form-control"><label>주유비 (원)</label><input type="number" id="carOil" value="0" required></div>
+                        <div class="form-control"><label>수리비 (원)</label><input type="number" id="carRepair" value="0" required></div>
+                        <div class="form-control"><label>기타 유지비 (원)</label><input type="number" id="carEtc" value="0" required></div>
+                        <div class="form-control"><label>정비 및 지출 기록일</label><input type="date" id="carDate" value="2026-05-27" required></div>
+                        <button type="submit" class="btn">차량 유지비용 장부 기록</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">📊 사내 차량 배송설비 운영 지출 대장</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>기록일자</th><th>차량구분</th><th class="text-right">주유비</th><th class="text-right">수리비</th><th class="text-right">기타유지비</th><th class="text-right">합계 비용</th></tr>
+                            </thead>
+                            <tbody id="carTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-ship-bill" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">📑 명세표 대상 출하 전표 선택</div>
+                    <div class="form-control">
+                        <label>출하 이력 건 선택</label>
+                        <select id="billSelect" onchange="generateStatementView()"></select>
+                    </div>
+                    
+                    <div class="icon-btn-group">
+                        <button type="button" class="icon-btn btn-print" onclick="printStatement()">🖨️ 실시간 명세표 인쇄</button>
+                        <button type="button" class="icon-btn btn-pdf" onclick="downloadStatementPDF()">💾 PDF 파일 다운로드</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">📄 거래명세표 프리뷰 양식</div>
+                    <div id="printArea" class="statement-box"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-quality" class="erp-section">
+            <div class="card full-width"><div class="card-title">⚠️ 품질 불량 관리</div><p>생산일보 실적 연동 시스템 작동 중</p></div>
+        </div>
+        <div id="section-system" class="erp-section">
+            <div class="card full-width"><div class="card-title">⚙️ 마스터 데이터 및 공장 시스템 설정</div><p>인프라 환경 정상 가동 중</p></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 🔐 로그인 폼 제어 및 강제 데이터 바인딩 연동
+            const loginForm = document.getElementById("loginForm");
+            loginForm.addEventListener("submit", function(e) {
+                e.preventDefault();
+                const uid = document.getElementById("userId").value;
+                const upw = document.getElementById("userPw").value;
+                if(uid === "admin" && upw === "1234") {
+                    document.getElementById("login-section").style.display = "none";
+                    document.getElementById("erp-main-content").style.display = "block";
+                    
+                    // 로그인 통과 시 순차 렌더링 강제 실행 (달력 깨짐 완벽 조치)
+                    initSelectBoxes();
+                    refreshAllTables();
+                } else {
+                    alert("아이디 또는 비밀번호가 일치하지 않습니다.");
+                }
+            });
+
+            document.getElementById("btnLogout").addEventListener("click", function() {
+                document.getElementById("login-section").style.display = "flex";
+                document.getElementById("erp-main-content").style.display = "none";
+            });
+
+            const defaultItems = [
+                { id: "KA4-H41243-4950-2", name: "DOOR-VENT, LH(1,2차)", type: "완제품", price: 494, matId: "MAT-PP-01" },
+                { id: "KA4-H41243-4960-2", name: "DOOR-VENT, RH(1,2차) -MTC", type: "완제품", price: 496, matId: "MAT-PP-01" },
+                { id: "KA4-LHD-H30153-4360", name: "DOOR ASS'Y-TEMP,LH", type: "완제품", price: 1096, matId: "MAT-ABS-02" },
+                { id: "NQ5-H30153-4290", name: "DOOR ASS'Y-DEF", type: "완제품", price: 720, matId: "MAT-PP-01" },
+                { id: "MAT-PP-01", name: "폴리프로필렌 사출 수지 레진", type: "원재료", price: 180, matId: "-" },
+                { id: "MAT-ABS-02", name: "ABS 고충격 수지재", type: "원재료", price: 250, matId: "-" }
+            ];
+
+            let buyData = JSON.parse(localStorage.getItem('erpBuys')) || [];
+            let orderData = JSON.parse(localStorage.getItem('erpOrders')) || [];
+            let planData = JSON.parse(localStorage.getItem('erpPlans')) || [];
+            let directData = JSON.parse(localStorage.getItem('erpDirects')) || [];
+            let reportData = JSON.parse(localStorage.getItem('erpReports')) || [];
+            let shipData = JSON.parse(localStorage.getItem('erpShips')) || [
+                { company: "공조인라인", id: "KA4-H41243-4950-2", price: 494, qty: 2880, lot: "LOT-SH-2601", date: "2026-05-27", boxName: "BOX-KA4-01 (KA4 전용 카톤대형)", carNo: "장운 1호차 (1톤)" }
+            ];
+            let carData = JSON.parse(localStorage.getItem('erpCars')) || [];
+
+            function initSelectBoxes() {
+                const targets = ["buyItemSelect", "ordItemSelect", "planItemSelect", "directItemSelect", "reportItemSelect", "shipItemSelect"];
+                targets.forEach(tid => {
+                    const el = document.getElementById(tid); if(!el) return; el.innerHTML = "";
+                    defaultItems.forEach(item => {
+                        if(tid === "buyItemSelect") {
+                            if(item.type !== "완제품") el.innerHTML += `<option value="${item.id}">${item.id} (${item.name})</option>`;
+                        } else {
+                            if(item.type === "완제품") el.innerHTML += `<option value="${item.id}">${item.id}</option>`;
+                        }
+                    });
+                });
+                syncShipPrice();
+                syncOrderPrice();
+            }
+
+            window.syncShipPrice = function() {
+                const id = document.getElementById("shipItemSelect").value;
+                const itm = defaultItems.find(i => i.id === id);
+                if(itm && document.getElementById("shipPrice")) document.getElementById("shipPrice").value = itm.price;
+            };
+            window.syncOrderPrice = function() {
+                const id = document.getElementById("ordItemSelect").value;
+                const itm = defaultItems.find(i => i.id === id);
+                if(itm && document.getElementById("ordPrice")) document.getElementById("ordPrice").value = itm.price;
+            };
+
+            function refreshAllTables() {
+                updateInventoryTable();
+                renderCalendar();
+                renderBuyTable();
+                renderOrderTable();
+                renderPlanTable();
+                renderDirectTable();
+                renderReportTable();
+                renderShipTable();
+                renderCarTable();
+                updateBillSelect();
+            }
+
+            function updateInventoryTable() {
+                const tbody = document.getElementById("inventoryTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                defaultItems.forEach(item => {
+                    let totalIn = 0, totalOut = 0;
+                    if(item.type === "완제품") {
+                        reportData.forEach(r => { if(r.id === item.id) totalIn += (r.qty - r.badQty); });
+                        shipData.forEach(s => { if(s.id === item.id) totalOut += s.qty; });
+                    } else {
+                        buyData.forEach(b => { if(b.id === item.id) totalIn += b.qty; });
+                        reportData.forEach(r => {
+                            const itm = defaultItems.find(i => i.id === r.id);
+                            if(itm && itm.matId === item.id) totalOut += r.qty;
+                        });
+                    }
+                    tbody.innerHTML += `<tr><td><strong>${item.id}</strong></td><td>${item.name}</td><td>${item.type}</td><td class="text-right">${totalIn.toLocaleString()}</td><td class="text-right" style="color:#dc2626;">${totalOut.toLocaleString()}</td><td class="text-right"><span style="font-weight:bold; color:#16a34a;">${(totalIn - totalOut).toLocaleString()}</span></td></tr>`;
+                });
+            }
+
+            // 달력 렌더링 엔진
+            window.renderCalendar = function() {
+                const grid = document.getElementById("calendarGrid"); if(!grid) return; grid.innerHTML = "";
+                const selectedMonth = parseInt(document.getElementById("monthSelect").value) || 5;
+
+                const weeks = ["일", "월", "화", "수", "목", "금", "토"];
+                weeks.forEach((w, i) => {
+                    let c = "calendar-day-header"; if(i===0) c+=" sun"; if(i===6) c+=" sat";
+                    grid.innerHTML += `<div class="${c}">${w}</div>`;
+                });
+
+                const daysMap = {1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31};
+                const totalDays = daysMap[selectedMonth];
+                const firstDayIdx = new Date(2026, selectedMonth - 1, 1).getDay();
+
+                for(let i = 0; i < firstDayIdx; i++) grid.innerHTML += `<div class="calendar-cell empty"></div>`;
+
+                for(let d = 1; d <= totalDays; d++) {
+                    const dow = new Date(2026, selectedMonth - 1, d).getDay();
+                    let c = "calendar-cell"; if(dow === 0) c += " sun"; if(dow === 6) c += " sat";
+                    grid.innerHTML += `<div class="${c}"><div class="day-num">${d}</div><div class="cal-data" id="cal-day-${selectedMonth}-${d}"></div></div>`;
+                }
+            };
+
+            function renderBuyTable() {
+                const tbody = document.getElementById("buyTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                buyData.forEach(b => tbody.innerHTML += `<tr><td>${b.date}</td><td>${b.bClass}</td><td>${b.company}</td><td>${b.id}</td><td class="text-right">${b.qty.toLocaleString()}</td><td>${b.lot}</td></tr>`);
+            }
+            function renderOrderTable() {
+                const tbody = document.getElementById("orderTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                orderData.forEach(o => tbody.innerHTML += `<tr><td>${o.date}</td><td>${o.company}</td><td>${o.id}</td><td class="text-right">${o.price}</td><td class="text-right">${o.qty.toLocaleString()}</td></tr>`);
+            }
+            function renderPlanTable() {
+                const tbody = document.getElementById("planTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                planData.forEach(p => tbody.innerHTML += `<tr><td>${p.date}</td><td>${p.machine}</td><td>${p.id}</td><td class="text-right">${p.qty.toLocaleString()}</td></tr>`);
+            }
+            function renderDirectTable() {
+                const tbody = document.getElementById("directTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                directData.forEach(d => tbody.innerHTML += `<tr><td>${d.date}</td><td>${d.machine}</td><td>${d.id}</td><td class="text-right">${d.qty.toLocaleString()}</td></tr>`);
+            }
+            function renderReportTable() {
+                const tbody = document.getElementById("reportTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                reportData.forEach(r => {
+                    let req = 0; orderData.forEach(o => { if(o.id === r.id) req += o.qty; });
+                    tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.machine}</td><td>${r.id}</td><td class="text-right">${(r.qty-r.badQty).toLocaleString()}</td><td class="text-right" style="color:red;">${r.badQty}</td><td class="text-right">${((r.qty-r.badQty)-req).toLocaleString()}</td></tr>`;
+                });
+            }
+
+            // 🚛 출하일보 및 스마트 필터 기능 스케줄 결합 렌더링
+            window.renderShipTable = function() {
+                const tbody = document.getElementById("shipTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                const schedBody = document.getElementById("shipScheduleTableBody"); if(!schedBody) return; schedBody.innerHTML = "";
+                
+                // 필터 값 획득
+                const fCompany = document.getElementById("filterCompany").value.trim().toLowerCase();
+                const fDate = document.getElementById("filterDate").value;
+
+                shipData.forEach(s => {
+                    const total = s.qty * s.price;
+                    const itm = defaultItems.find(i => i.id === s.id);
+                    
+                    // 기본 출하 대장 출력
+                    tbody.innerHTML += `<tr><td>${s.date}</td><td>${s.company}</td><td><strong>${s.id}</strong></td><td class="text-right">${s.qty.toLocaleString()}</td><td class="text-right">${s.price}</td><td class="text-right"><strong>${total.toLocaleString()}</strong></td><td>${s.carNo}</td><td>${s.boxName || '-'}</td><td>${s.lot}</td></tr>`;
+                    
+                    // 스케줄 필터링 조건 분기 계산
+                    const matchesCompany = fCompany === "" || s.company.toLowerCase().includes(fCompany);
+                    const matchesDate = fDate === "" || s.date === fDate;
+
+                    if(matchesCompany && matchesDate) {
+                        schedBody.innerHTML += `
+                            <tr>
+                                <td>${s.date}</td>
+                                <td><strong>${s.company}</strong></td>
+                                <td>${s.id}</td>
+                                <td>${itm?itm.name:''}</td>
+                                <td class="text-right" style="color:#16a34a; font-weight:bold;">${s.qty.toLocaleString()} 개</td>
+                                <td><span style="color:#2563eb; font-weight:bold;">${s.carNo}</span></td>
+                                <td><span style="color:#475569;">${s.boxName || '미기입'}</span></td>
+                            </tr>`;
+                    }
+                });
+            };
+
+            window.resetShipFilter = function() {
+                document.getElementById("filterCompany").value = "";
+                document.getElementById("filterDate").value = "";
+                renderShipTable();
+            };
+
+            function renderCarTable() {
+                const tbody = document.getElementById("carTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                carData.forEach(c => {
+                    const sum = c.oil + c.repair + c.etc;
+                    tbody.innerHTML += `<tr><td>${c.date}</td><td><strong>${c.car}</strong></td><td class="text-right">${c.oil.toLocaleString()}</td><td class="text-right">${c.repair.toLocaleString()}</td><td class="text-right">${c.etc.toLocaleString()}</td><td class="text-right" style="font-weight:bold; color:#dc2626;">${sum.toLocaleString()} 원</td></tr>`;
+                });
+            }
+
+            function updateBillSelect() {
+                const sel = document.getElementById("billSelect"); if(!sel) return; sel.innerHTML = "";
+                shipData.forEach((s, idx) => {
+                    sel.innerHTML += `<option value="${idx}">[${s.date}] ${s.company} ▶ ${s.id} (${s.qty}개)</option>`;
+                });
+                generateStatementView();
+            }
+
+            window.generateStatementView = function() {
+                const printArea = document.getElementById("printArea"); if(!printArea) return;
+                const idx = document.getElementById("billSelect").value;
+                if(idx === "" || !shipData[idx]) { printArea.innerHTML = "조회 대상 출하 내역서가 없습니다."; return; }
+                const s = shipData[idx];
+                const itm = defaultItems.find(i => i.id === s.id);
+                const totalAmt = s.qty * s.price;
+
+                printArea.innerHTML = `
+                    <div id="pdf-target-zone">
+                        <div class="statement-title">거 래 명 세 표</div>
+                        <div style="text-align:right; font-size:11px; margin-bottom:10px;">출하일자: ${s.date} (공급받는자 보관용)</div>
+                        <table style="width:100%; border:2px solid #1e3a8a; border-collapse:collapse; font-size:12px;">
+                            <tr><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급자</td><td style="border:1px solid #cbd5e1; padding:8px;">장운5공장 사출/포장사업부</td><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급받는자</td><td style="border:1px solid #cbd5e1; padding:8px;"><strong>${s.company} 귀하</strong></td></tr>
+                            <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">출하 품번</td><td style="border:1px solid #cbd5e1; padding:8px;">${s.id}</td><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">규격 품명</td><td style="border:1px solid #cbd5e1; padding:8px;">${itm?itm.name:''}</td></tr>
+                            <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">포장 박스명</td><td style="border:1px solid #cbd5e1; padding:8px; color:#2563eb;">${s.boxName || '-'}</td><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">지정 배송차량</td><td style="border:1px solid #cbd5e1; padding:8px;">${s.carNo}</td></tr>
+                            <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">출하 수량</td><td class="text-right" style="border:1px solid #cbd5e1; padding:8px;"><strong>${s.qty.toLocaleString()} 개</strong></td><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">단가 / 공급액</td><td class="text-right" style="border:1px solid #cbd5e1; padding:8px;">₩${s.price.toLocaleString()} / <strong>₩${totalAmt.toLocaleString()}</strong></td></tr>
+                            <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">출하 LOT번호</td><td colspan="3" style="border:1px solid #cbd5e1; padding:8px;"><strong>${s.lot}</strong></td></tr>
+                        </table>
+                        <p style="font-size:11px; color:#64748b; margin-top:15px; text-align:center;">위 물품을 정히 공급합니다. (장운5공장 전산 인쇄본)</p>
+                    </div>
+                `;
+            };
+
+            // 🖨️ 인쇄 스크립트 기능 
+            window.printStatement = function() {
+                const target = document.getElementById("pdf-target-zone").innerHTML;
+                const orig = document.body.innerHTML;
+                document.body.innerHTML = "<div style='padding:40px; background:white;'>" + target + "</div>";
+                window.print();
+                document.body.innerHTML = orig;
+                window.location.reload(); // 원복 유도구조
+            };
+
+            // 💾 PDF 다운로드 스크립트 기능
+            window.downloadStatementPDF = function() {
+                const element = document.getElementById("pdf-target-zone");
+                const idx = document.getElementById("billSelect").value;
+                const s = shipData[idx] || { company: "거래처", date: "2026-05-27" };
+                const opt = {
+                    margin: 1,
+                    filename: `거래명세표_${s.company}_${s.date}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(element).save();
+            };
+
+            // 폼 전송 바인딩 처리 연동
+            document.getElementById("shipForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                shipData.push({
+                    company: document.getElementById("shipCompany").value,
+                    id: document.getElementById("shipItemSelect").value,
+                    price: parseInt(document.getElementById("shipPrice").value)||0,
+                    qty: parseInt(document.getElementById("shipQty").value)||0,
+                    lot: document.getElementById("shipLot").value,
+                    date: document.getElementById("shipDate").value,
+                    boxName: document.getElementById("shipBoxName").value,
+                    carNo: document.getElementById("shipCarNo").value
+                });
+                localStorage.setItem('erpShips', JSON.stringify(shipData));
+                refreshAllTables();
+                alert("박스 매칭 및 완제품 출하 등록 완료!");
+            });
+
+            document.getElementById("buyForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                buyData.push({ bClass:document.getElementById("buyClass").value, company:document.getElementById("buyCompany").value, id:document.getElementById("buyItemSelect").value, qty:parseInt(document.getElementById("buyQty").value)||0, date:document.getElementById("buyDate").value, lot:document.getElementById("buyLot").value });
+                localStorage.setItem('erpBuys', JSON.stringify(buyData)); refreshAllTables(); alert("자재 입고 완료");
+            });
+            document.getElementById("orderForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                orderData.push({ company:document.getElementById("ordCompany").value, id:document.getElementById("ordItemSelect").value, price:parseInt(document.getElementById("ordPrice").value), qty:parseInt(document.getElementById("ordQty").value)||0, date:document.getElementById("ordDate").value });
+                localStorage.setItem('erpOrders', JSON.stringify(orderData)); refreshAllTables(); alert("발주 수주 완료");
+            });
+            document.getElementById("planForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                planData.push({ machine:document.getElementById("planMachine").value, id:document.getElementById("planItemSelect").value, qty:parseInt(document.getElementById("planQty").value), date:document.getElementById("planDate").value });
+                localStorage.setItem('erpPlans', JSON.stringify(planData)); refreshAllTables(); alert("계획 수립 완료");
+            });
+            document.getElementById("directForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                directData.push({ machine:document.getElementById("directMachine").value, id:document.getElementById("directItemSelect").value, qty:parseInt(document.getElementById("directQty").value), date:document.getElementById("directDate").value });
+                localStorage.setItem('erpDirects', JSON.stringify(directData)); refreshAllTables(); alert("작업지시 투입 완료");
+            });
+            document.getElementById("reportForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                reportData.push({ machine:document.getElementById("reportMachine").value, id:document.getElementById("reportItemSelect").value, qty:parseInt(document.getElementById("reportQty").value), badQty:parseInt(document.getElementById("reportBadQty").value)||0, date:document.getElementById("reportDate").value });
+                localStorage.setItem('erpReports', JSON.stringify(reportData)); refreshAllTables(); alert("생산일보 등록 완료");
+            });
+            document.getElementById("carForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                carData.push({ car:document.getElementById("carSelect").value, oil:parseInt(document.getElementById("carOil").value)||0, repair:parseInt(document.getElementById("carRepair").value)||0, etc:parseInt(document.getElementById("carEtc").value)||0, date:document.getElementById("carDate").value });
+                localStorage.setItem('erpCars', JSON.stringify(carData)); refreshAllTables(); alert("차량 전표 기록 완료");
+            });
+
+            // 네비게이션 제어 스크립트 허브
+            const sections = ["section-dash", "section-buy", "section-order", "section-plan", "section-direct", "section-report", "section-ship-report", "section-ship-schedule", "section-ship-car", "section-ship-bill", "section-quality", "section-system"];
+            
+            function clearAllDisplay() {
+                sections.forEach(s => { const el = document.getElementById(s); if(el) el.style.display="none"; });
+                document.getElementById("prodSubNav").style.display = "none";
+                document.getElementById("shipSubNav").style.display = "none";
+                document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+            }
+
+            document.getElementById("menu-dash").addEventListener("click", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-dash").style.display="block"; renderCalendar(); });
+            document.getElementById("menu-buy").addEventListener("click", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-buy").style.display="block"; });
+            document.getElementById("menu-quality").addEventListener("click", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-quality").style.display="block"; });
+            document.getElementById("menu-system").addEventListener("click", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-system").style.display="block"; });
+            
+            document.getElementById("menu-prod").addEventListener("click", function() {
+                clearAllDisplay(); this.classList.add("active");
+                document.getElementById("prodSubNav").style.display = "flex";
+                document.getElementById("sub-order").classList.add("active");
+                document.getElementById("section-order").style.display = "block";
+            });
+
+            document.getElementById("menu-ship").addEventListener("click", function() {
+                clearAllDisplay(); this.classList.add("active");
+                document.getElementById("shipSubNav").style.display = "flex";
+                document.getElementById("sub-ship-report").classList.add("active");
+                document.getElementById("section-ship-report").style.display = "block";
+            });
+
+            const prodSubTabs = { "sub-order":"section-order", "sub-plan":"section-plan", "sub-direct":"section-direct", "sub-report":"section-report" };
+            Object.keys(prodSubTabs).forEach(sid => {
+                document.getElementById(sid).addEventListener("click", function() {
+                    document.querySelectorAll("#prodSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
+                    this.classList.add("active");
+                    sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
+                    document.getElementById("prodSubNav").style.display = "flex";
+                    document.getElementById(prodSubTabs[sid]).style.display = "block";
+                });
+            });
+
+            const shipSubTabs = { "sub-ship-report":"section-ship-report", "sub-ship-schedule":"section-ship-schedule", "sub-ship-car":"section-ship-car", "sub-ship-bill":"section-ship-bill" };
+            Object.keys(shipSubTabs).forEach(sid => {
+                document.getElementById(sid).addEventListener("click", function() {
+                    document.querySelectorAll("#shipSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
+                    this.classList.add("active");
+                    sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
+                    document.getElementById("shipSubNav").style.display = "flex";
+                    document.getElementById(shipSubTabs[sid]).style.display = "block";
+                });
+            });
+
+            // 화면 초기 은닉
+            document.getElementById("erp-main-content").style.display = "none";
+        });
+    </script>
+</body>
+</html>
