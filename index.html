@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>장운5공장 통합 ERP 시스템</title>
+    <title>장운산업 ERP 시스템</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -32,14 +32,13 @@
         
         /* 레이아웃 구조 */
         .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 25px; margin-bottom: 25px; }
-        @media (min-width: 1280px) { .dashboard-grid { grid-template-columns: 390px 1fr; } .full-width { grid-column: span 2; } }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); height: fit-content; }
         .card-title { font-size: 16px; font-weight: bold; color: #1e3a8a; margin-bottom: 15px; border-left: 4px solid #2563eb; padding-left: 8px; }
         
         .erp-section { display: none; }
         
         /* 달력 스타일 지정 */
-        .calendar-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .calendar-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; }
         .calendar-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
         .calendar-title { font-size: 20px; font-weight: bold; color: #1e3a8a; margin: 0; }
         .calendar-selectors { display: flex; gap: 8px; }
@@ -48,12 +47,17 @@
         .calendar-day-header { text-align: center; font-weight: bold; padding: 10px; background: #e2e8f0; color: #475569; border-radius: 4px; font-size: 13px; }
         .calendar-day-header.sun { color: #dc2626; background: #fee2e2; }
         .calendar-day-header.sat { color: #2563eb; background: #dbeafe; }
-        .calendar-cell { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 95px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
+        .calendar-cell { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 110px; padding: 8px; display: flex; flex-direction: column; justify-content: flex-start; box-sizing: border-box; }
         .calendar-cell.empty { background: #f1f5f9; border: 1px dashed #e2e8f0; }
-        .day-num { font-weight: bold; font-size: 14px; color: #334155; }
+        .day-num { font-weight: bold; font-size: 14px; color: #334155; margin-bottom: 5px; }
         .calendar-cell.sun .day-num { color: #dc2626; }
         .calendar-cell.sat .day-num { color: #2563eb; }
         
+        /* 내부 달력 텍스트 스타일 */
+        .cal-price-buy { font-size: 11px; color: #dc2626; font-weight: bold; margin-top: 2px; }
+        .cal-price-sell { font-size: 11px; color: #2563eb; font-weight: bold; margin-top: 2px; }
+        .cal-att-count { font-size: 11px; color: #16a34a; font-weight: bold; margin-top: 4px; background: #dcfce7; padding: 2px 4px; border-radius: 4px; display: inline-block; }
+
         /* 테이블 */
         .table-wrapper { overflow-x: auto; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
@@ -81,99 +85,156 @@
         /* 거래명세표 박스 레이아웃 */
         .statement-box { background: #fff; border: 2px solid #1e3a8a; padding: 25px; margin-top: 15px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .statement-title { font-size: 26px; font-weight: bold; text-align: center; color: #1e3a8a; letter-spacing: 8px; margin-bottom: 15px; text-decoration: underline; }
+
+        /* 상태 배지 */
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; display: inline-block; text-align: center; }
+        .badge-waiting { background-color: #f59e0b; }
+        .badge-approved { background-color: #10b981; }
+        .badge-rejected { background-color: #ef4444; }
+        
+        .btn-mini { padding: 4px 8px; font-size: 11px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 4px; }
+        .btn-approve { background-color: #10b981; }
+        .btn-approve:hover { background-color: #059669; }
+        .btn-reject { background-color: #ef4444; }
+        .btn-reject:hover { background-color: #dc2626; }
     </style>
 </head>
 <body>
 
     <div id="login-section" class="login-wrapper">
         <div class="login-card">
-            <h2>장운5공장 ERP 로그인</h2>
+            <h2>장운산업 ERP 로그인</h2>
             <form id="loginForm">
                 <div class="form-control" style="text-align: left;"><label>사용자 아이디 (ID)</label><input type="text" id="userId" value="admin" required></div>
                 <div class="form-control" style="text-align: left;"><label>비밀번호 (Password)</label><input type="password" id="userPw" value="1234" required></div>
                 <button type="submit" class="btn" style="background:#1e3a8a; padding: 13px;">시스템 보안 로그인</button>
             </form>
-            <p style="font-size:12px; color:#64748b; margin-top:15px;">초기 정보: admin / 1234</p>
+            <p style="font-size:12px; color:#64748b; margin-top:15px; text-align: left; line-height: 1.5;">
+                <strong>[테스트 부서장 계정 정보 (비번: 1234)]</strong><br>
+                조립: assem | 사출: inject | 영업: sales | 자재: mat<br>
+                품질: qual | 관리: manage | 기획: plan | 최고관리자: admin
+            </p>
         </div>
     </div>
 
     <div id="erp-main-content">
         <div class="erp-header">
-            <h1>🏭 장운5공장 통합 관리 시스템 (ERP) <span>V4.5 (안정화 버전)</span></h1>
-            <button class="btn-logout" id="btnLogout">🔒 로그아웃</button>
+            <h1>장운산업 통합 관리 시스템</h1>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="current-user-badge" style="font-size: 14px; font-weight: bold; background: #2563eb; padding: 4px 10px; border-radius: 4px;"></span>
+                <button class="btn-logout" id="btnLogout">로그아웃</button>
+            </div>
         </div>
 
+        <!-- 🌐 메인 내비게이션 바 -->
         <div class="erp-nav">
-            <div class="nav-item active" id="menu-dash">🏠 종합 대시보드 (달력)</div>
-            <div class="nav-item" id="menu-buy">🛒 구매 / 입고 관리</div>
-            <div class="nav-item" id="menu-prod">🔧 생산 공정 관리</div>
-            <div class="nav-item" id="menu-ship">🚛 출하 / 영업 관리</div>
-            <div class="nav-item" id="menu-quality">⚠️ 품질 불량 관리</div>
-            <div class="nav-item" id="menu-system">⚙️ 시스템 관리</div>
+            <div class="nav-item active" id="menu-dash">홈</div>
+            <div class="nav-item" id="menu-mat">자재</div>
+            <div class="nav-item" id="menu-buy">구매입고</div>
+            <div class="nav-item" id="menu-prod">생산</div>
+            <div class="nav-item" id="menu-assem">조립</div>
+            <div class="nav-item" id="menu-sales">영업</div>
+            <div class="nav-item" id="menu-quality">품질</div>
+            <div class="nav-item" id="menu-attendance">근태현황</div>
+            <div class="nav-item" id="menu-system">시스템관리</div>
         </div>
 
+        <!-- 📂 자재 카테고리 내부 서브 메뉴 -->
+        <div class="erp-sub-nav" id="matSubNav">
+            <div class="sub-nav-item active" id="sub-mat-raw">원재료</div>
+            <div class="sub-nav-item" id="sub-mat-part">자재</div>
+            <div class="sub-nav-item" id="sub-mat-sub">부자재</div>
+            <div class="sub-nav-item" id="sub-mat-stock">현재고 실적표</div>
+        </div>
+
+        <!-- 📂 생산 카테고리 내부 서브 메뉴 -->
         <div class="erp-sub-nav" id="prodSubNav">
-            <div class="sub-nav-item active" id="sub-order">📋 발주내용</div>
-            <div class="sub-nav-item" id="sub-plan">📅 생산계획</div>
-            <div class="sub-nav-item" id="sub-direct">📢 생산지시</div>
-            <div class="sub-nav-item" id="sub-report">📝 생산일보 (부족/불량분석)</div>
+            <div class="sub-nav-item active" id="sub-prod-plan">생산계획</div>
+            <div class="sub-nav-item" id="sub-prod-direct">생산지시</div>
+            <div class="sub-nav-item" id="sub-prod-report">생산일보 (부족/불량분석)</div>
+            <div class="sub-nav-item" id="sub-prod-mold">금형이력</div>
         </div>
 
-        <div class="erp-sub-nav" id="shipSubNav">
-            <div class="sub-nav-item active" id="sub-ship-report">📝 출하일보입력</div>
-            <div class="sub-nav-item" id="sub-ship-schedule">📅 출하일정</div>
-            <div class="sub-nav-item" id="sub-ship-car">🚚 차량관리 (유지비)</div>
-            <div class="sub-nav-item" id="sub-ship-bill">📄 명세표등록/출력</div>
+        <!-- 📂 조립 카테고리 내부 서브 메뉴 -->
+        <div class="erp-sub-nav" id="assemSubNav">
+            <div class="sub-nav-item active" id="sub-assem-report">조립 작업일지 / 유실 내역</div>
         </div>
 
-        <div id="section-dash" class="erp-section">
-            <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-title">📊 실시간 공장 현황 코어</div>
-                    <p style="font-size:13px; color:#475569; line-height: 1.5;">성공적으로 로그인되었습니다. 아래 달력현황과 실시간 품목고를 파악하여 공장 가동률을 최적화하세요.</p>
-                </div>
-                
-                <div class="calendar-box">
-                    <div class="calendar-header-bar">
-                        <div class="calendar-title">📅 자금 흐름 현황판 (매입 vs 매출)</div>
-                        <div class="calendar-selectors">
-                            <select id="yearSelect" onchange="renderCalendar()"><option value="2026" selected>2026년</option></select>
-                            <select id="monthSelect" onchange="renderCalendar()">
-                                <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
-                                <option value="4">4월</option><option value="5" selected>5월</option><option value="6">6월</option>
-                                <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
-                                <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="calendar-grid" id="calendarGrid"></div>
-                </div>
+        <!-- 📂 영업 카테고리 내부 서브 메뉴 -->
+        <div class="erp-sub-nav" id="salesSubNav">
+            <div class="sub-nav-item active" id="sub-ship-report">출하일보입력</div>
+            <div class="sub-nav-item" id="sub-ship-schedule">출하일정</div>
+            <div class="sub-nav-item" id="sub-ship-car">차량관리 (유지비)</div>
+            <div class="sub-nav-item" id="sub-ship-bill">명세표등록/출력</div>
+        </div>
 
-                <div class="card full-width">
-                    <div class="card-title">📊 실시간 품목별 창고 현재고 실적표</div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">생산/입고량</th><th class="text-right">출하 차감량</th><th class="text-right">현재고</th></tr>
-                            </thead>
-                            <tbody id="inventoryTableBody"></tbody>
-                        </table>
+        <!-- 📂 근태현황 카테고리 내부 서브 메뉴 -->
+        <div class="erp-sub-nav" id="attendanceSubNav">
+            <div class="sub-nav-item active" id="sub-att-reg">근태 / 연차 신청</div>
+            <div class="sub-nav-item" id="sub-att-list">부서별 근태 현황판</div>
+        </div>
+
+        <!-- 홈 섹션 -->
+        <div id="section-dash" class="erp-section" style="display:block;">
+            <div class="calendar-box">
+                <div class="calendar-header-bar">
+                    <div class="calendar-title">매입매출현황</div>
+                    <div class="calendar-selectors">
+                        <select id="yearSelect" onchange="renderCalendar()"><option value="2026" selected>2026년</option></select>
+                        <select id="monthSelect" onchange="renderCalendar()">
+                            <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+                            <option value="4">4월</option><option value="5" selected>5월</option><option value="6">6월</option>
+                            <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+                            <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+                        </select>
                     </div>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+        </div>
+
+        <!-- 자재 분류별 공통 템플릿 섹션 -->
+        <div id="section-mat-view" class="erp-section">
+            <div class="card full-width">
+                <div class="nav-item" id="matViewTitle" style="border:none; background:none; font-size:16px; font-weight:bold; color:#1e3a8a; pointer-events:none; padding-left:0;">자재 목록 원장</div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">계약단가</th></tr>
+                        </thead>
+                        <tbody id="matViewTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
+        <!-- 자재 - 현재고 실적표 섹션 -->
+        <div id="section-mat-stock" class="erp-section">
+            <div class="card full-width">
+                <div class="card-title">실시간 품목별 창고 현재고 실적표</div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">생산/입고량</th><th class="text-right">출하 차감량</th><th class="text-right">현재고</th></tr>
+                        </thead>
+                        <tbody id="inventoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 구매입고 섹션 -->
         <div id="section-buy" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">🛒 자재 / 부자재 / 원재료 입고 등록</div>
+                    <div class="card-title">자재 / 부자재 / 원재료 입고 등록</div>
                     <form id="buyForm">
                         <div class="form-control">
                             <label>자재 구분</label>
                             <select id="buyClass" required>
-                                <option value="원재료">💎 원재료 (사출 수지/레진 등)</option>
-                                <option value="자재">📦 자재 (기본 부품류)</option>
-                                <option value="부자재">🎗️ 부자재 (박스, 테이프, 라벨 등)</option>
+                                <option value="원재료">원재료 (사출 수지/레진 등)</option>
+                                <option value="자재">자재 (기본 부품류)</option>
+                                <option value="부자재">부자재 (박스, 테이프, 라벨 등)</option>
                             </select>
                         </div>
                         <div class="form-control"><label>외주처 / 공급사</label><input type="text" id="buyCompany" value="롯데케미칼" required></div>
@@ -185,7 +246,7 @@
                     </form>
                 </div>
                 <div class="card">
-                    <div class="card-title">📋 자재/부자재/원재료 입고 대장 원장</div>
+                    <div class="card-title">자재/부자재/원재료 입고 대장 원장</div>
                     <div class="table-wrapper">
                         <table>
                             <thead><tr><th>입고일자</th><th>구분</th><th>외주처</th><th>품번</th><th class="text-right">입고수량</th><th>LOT</th></tr></thead>
@@ -196,10 +257,11 @@
             </div>
         </div>
 
+        <!-- 영업 - 수주등록 세션 -->
         <div id="section-order" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">📝 신규 고객사 발주 등록</div>
+                    <div class="card-title">신규 고객사 발주 등록</div>
                     <form id="orderForm">
                         <div class="form-control"><label>발주처(고객사)</label><input type="text" id="ordCompany" value="현대모비스" required></div>
                         <div class="form-control"><label>품번/품명 선택</label><select id="ordItemSelect" onchange="syncOrderPrice()" required></select></div>
@@ -210,7 +272,7 @@
                     </form>
                 </div>
                 <div class="card">
-                    <div class="card-title">📋 수주 및 발주내용 모니터링 현황</div>
+                    <div class="card-title">수주 및 발주내용 모니터링 현황</div>
                     <div class="table-wrapper">
                         <table>
                             <thead><tr><th>납기일</th><th>발주처</th><th>품번</th><th class="text-right">단가</th><th class="text-right">발주수량</th></tr></thead>
@@ -221,10 +283,11 @@
             </div>
         </div>
         
+        <!-- 생산 - 생산계획 섹션 -->
         <div id="section-plan" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">📅 생산계획 수립</div>
+                    <div class="card-title">생산계획 수립</div>
                     <form id="planForm">
                         <div class="form-control"><label>작업 사출기</label><select id="planMachine" required></select></div>
                         <div class="form-control"><label>대상 품번</label><select id="planItemSelect" required></select></div>
@@ -233,14 +296,15 @@
                         <button type="submit" class="btn">계획 반영</button>
                     </form>
                 </div>
-                <div class="card"><div class="card-title">🗓️ 주간 생산 계획표</div><div class="table-wrapper"><table><thead><tr><th>계획일자</th><th>설비구분</th><th>품번</th><th class="text-right">계획수량</th></tr></thead><tbody id="planTableBody"></tbody></table></div></div>
+                <div class="card"><div class="card-title">주간 생산 계획표</div><div class="table-wrapper"><table><thead><tr><th>계획일자</th><th>설비구분</th><th>품번</th><th class="text-right">계획수량</th></tr></thead><tbody id="planTableBody"></tbody></table></div></div>
             </div>
         </div>
 
+        <!-- 생산 - 생산지시 섹션 -->
         <div id="section-direct" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">📢 현장 생산지시서 발행</div>
+                    <div class="card-title">현장 생산지시서 발행</div>
                     <form id="directForm">
                         <div class="form-control"><label>지시 사출기</label><select id="directMachine" required></select></div>
                         <div class="form-control"><label>지시 품번</label><select id="directItemSelect" required></select></div>
@@ -249,31 +313,135 @@
                         <button type="submit" class="btn" style="background:#d97706;">생산지시 투입</button>
                     </form>
                 </div>
-                <div class="card"><div class="card-title">📢 실시간 생산 지시 원장</div><div class="table-wrapper"><table><thead><tr><th>지시일자</th><th>설비구분</th><th>품번</th><th class="text-right">지시수량</th></tr></thead><tbody id="directTableBody"></tbody></table></div></div>
+                <div class="card"><div class="card-title">실시간 생산 지시 원장</div><div class="table-wrapper"><table><thead><tr><th>지시일자</th><th>설비구분</th><th>품번</th><th class="text-right">지시수량</th></tr></thead><tbody id="directTableBody"></tbody></table></div></div>
             </div>
         </div>
 
+        <!-- 생산 - 생산일보 섹션 -->
         <div id="section-report" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">📝 당일 생산실적 마감</div>
+                    <div class="card-title">당일 생산실적 마감</div>
                     <form id="reportForm">
                         <div class="form-control"><label>생산 사출기</label><select id="reportMachine" required></select></div>
                         <div class="form-control"><label>생산 품번</label><select id="reportItemSelect" required></select></div>
                         <div class="form-control"><label>실제 완료 총생산량 (양품+불량)</label><input type="number" id="reportQty" required></div>
-                        <div class="form-control"><label>⚠️ 이 중 불량 수량 (개)</label><input type="number" id="reportBadQty" value="0" required></div>
+                        <div class="form-control"><label>이 중 불량 수량 (개)</label><input type="number" id="reportBadQty" value="0" required></div>
                         <div class="form-control"><label>생산 일자</label><input type="date" id="reportDate" value="2026-05-27" required></div>
                         <button type="submit" class="btn" style="background:#16a34a;">생산일보 기록</button>
                     </form>
                 </div>
-                <div class="card"><div class="card-title">🚨 부족/불량 실시간 분석판</div><div class="table-wrapper"><table><thead><tr><th>생산일자</th><th>설비</th><th>품번</th><th class="text-right">양품량</th><th class="text-right">불량량</th><th class="text-right">발주과부족</th></tr></thead><tbody id="reportTableBody"></tbody></table></div></div>
+                <div class="card"><div class="card-title">부족/불량 실시간 분석판</div><div class="table-wrapper"><table><thead><tr><th>생산일자</th><th>설비</th><th>품번</th><th class="text-right">양품량</th><th class="text-right">불량량</th><th class="text-right">발주과부족</th></tr></thead><tbody id="reportTableBody"></tbody></table></div></div>
             </div>
         </div>
 
+        <!-- 생산 - 금형이력 섹션 -->
+        <div id="section-mold" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">신규 금형 및 정비 이력 등록</div>
+                    <form id="moldForm">
+                        <div class="form-control"><label>금형코드 / 명칭</label><input type="text" id="moldId" value="MOLD-KA4-DOOR-01" required></div>
+                        <div class="form-control"><label>최초 입고날</label><input type="date" id="moldInDate" value="2026-01-15" required></div>
+                        <div class="form-control"><label>수리 내역 및 이력 기입</label><input type="text" id="moldRepair" value="정밀 코어 방전 가공 및 핀 교체"></div>
+                        <div class="form-control"><label>세척 내역 및 이력 기입</label><input type="text" id="moldWash" value="초음파 금형 세척기 가동 표면 가스 제거"></div>
+                        <div class="form-control"><label>작업 및 기록 일자</label><input type="date" id="moldLogDate" value="2026-06-04" required></div>
+                        <button type="submit" class="btn" style="background:#475569;">금형 관리 대장 반영</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">공장 보유 금형 이력 전산 장부</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>기록일자</th><th>금형코드</th><th>최초입고일</th><th>수리이력</th><th>세척이력</th></tr>
+                            </thead>
+                            <tbody id="moldTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔧 조립 - 실적마감 및 설비유실 관리 통합 섹션 (엑셀 연동 데이터 반영) -->
+        <div id="section-assem" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">조립 라인 작업일지 등록 (HVAC / YB PE)</div>
+                    <form id="assemReportForm">
+                        <div class="form-control">
+                            <label>조립 라인 선택</label>
+                            <select id="assemLine" required>
+                                <option value="HVAC">HVAC 라인</option>
+                                <option value="YB PE">YB PE 라인</option>
+                            </select>
+                        </div>
+                        <div class="form-control"><label>생산품명</label><input type="text" id="assemProduct" placeholder="예: 일반, HEV, HVRC, HVAA 등" required></div>
+                        <div class="form-control"><label>생산 수량 (개)</label><input type="number" id="assemQty" required></div>
+                        <div class="form-control"><label>작업 일자</label><input type="date" id="assemDate" value="2026-05-30" required></div>
+                        <button type="submit" class="btn">당일 조립 실적 마감</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">조립 작업일지 이력 장부</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>작업일자</th><th>조립 라인</th><th>생산품</th><th class="text-right">생산수량</th></tr>
+                            </thead>
+                            <tbody id="assemReportTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="margin-top:25px;">
+                <div class="card">
+                    <div class="card-title">설비 유실(비가동) 내역 기록</div>
+                    <form id="assemLossForm">
+                        <div class="form-control">
+                            <label>조립 라인 선택</label>
+                            <select id="lossLine" required>
+                                <option value="YB PE">YB PE 라인</option>
+                                <option value="HVAC">HVAC 라인</option>
+                            </select>
+                        </div>
+                        <div class="form-control">
+                            <label>유형 CODE 선택</label>
+                            <select id="lossCode" required>
+                                <option value="101 - 전기이상">101 (전기이상)</option>
+                                <option value="102 - 부자재 결품">102 (부자재 결품)</option>
+                                <option value="103 - 기타 설비고장">103 (기타 설비고장)</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <div class="form-control" style="flex:1;"><label>정지 시작 시간</label><input type="time" id="lossStartTime" required></div>
+                            <div class="form-control" style="flex:1;"><label>재가동(종료) 시간</label><input type="time" id="lossEndTime" required></div>
+                        </div>
+                        <div class="form-control"><label>상세 사유 기록</label><input type="text" id="lossReason" placeholder="예: PTC없음, 블로워 LHD없음" required></div>
+                        <div class="form-control"><label>발생 일자</label><input type="date" id="lossDate" value="2026-05-06" required></div>
+                        <button type="submit" class="btn" style="background:#ef4444;">유실 내역 영구 기록</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">조립 라인 설비 유실 내역 원장</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>발생일자</th><th>조립 라인</th><th>유형내용</th><th>정지~재가동</th><th>상세사유</th></tr>
+                            </thead>
+                            <tbody id="assemLossTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 영업 - 출하실적등록 섹션 -->
         <div id="section-ship-report" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">🚛 출하 실적 등록 입력창</div>
+                    <div class="card-title">출하 실적 등록 입력창</div>
                     <form id="shipForm">
                         <div class="form-control"><label>외주처 / 고객사</label><input type="text" id="shipCompany" value="공조인라인" required></div>
                         <div class="form-control"><label>출하 대상 품번</label><select id="shipItemSelect" onchange="syncShipPrice()" required></select></div>
@@ -283,7 +451,7 @@
                         <div class="form-control"><label>출하 날짜</label><input type="date" id="shipDate" value="2026-05-27" required></div>
                         
                         <div class="form-control">
-                            <label>📦 매칭 포장 박스명/정보 기입</label>
+                            <label>매칭 포장 박스명/정보 기입</label>
                             <select id="shipBoxName">
                                 <option value="BOX-KA4-01 (KA4 전용 카톤대형)">BOX-KA4-01 (KA4 전용 카톤대형)</option>
                                 <option value="BOX-NQ5-중형 (NQ5 부품용)">BOX-NQ5-중형 (NQ5 부품용)</option>
@@ -293,7 +461,7 @@
                         </div>
 
                         <div class="form-control">
-                            <label>배송 차량번호 선택 (드롭박스)</label>
+                            <label>배송 차량번호 선택</label>
                             <select id="shipCarNo" required>
                                 <option value="장운 1호차 (1톤)">장운 1호차 (1톤)</option>
                                 <option value="장운 2호차 (2.5톤)">장운 2호차 (2.5톤)</option>
@@ -306,11 +474,11 @@
                     </form>
                 </div>
                 <div class="card">
-                    <div class="card-title">📋 완제품 출하일보 기록 원장</div>
+                    <div class="card-title">완제품 출하일보 기록 원장</div>
                     <div class="table-wrapper">
                         <table>
                             <thead>
-                                <tr><th>출하일자</th><th>외주처</th><th>품번</th><th class="text-right">수량</th><th class="text-right">단가</th><th>차량번호</th><th>📦 적용박스명</th><th>LOT</th></tr>
+                                <tr><th>출하일자</th><th>외주처</th><th>품번</th><th class="text-right">수량</th><th class="text-right">단가</th><th>차량번호</th><th>적용박스명</th><th>LOT</th></tr>
                             </thead>
                             <tbody id="shipTableBody"></tbody>
                         </table>
@@ -319,26 +487,27 @@
             </div>
         </div>
 
+        <!-- 영업 - 출하일정 섹션 -->
         <div id="section-ship-schedule" class="erp-section">
             <div class="card full-width">
-                <div class="card-title">📅 완제품 영업 및 출하 일정 스케줄러 (조건 검색 필터링)</div>
+                <div class="card-title">완제품 영업 및 출하 일정 스케줄러 (조건 검색 필터링)</div>
                 
                 <div class="filter-box">
                     <div style="flex: 1; min-width: 200px;">
-                        <label style="font-size: 12px; font-weight: bold; color: #475569;">🏢 거래처/외주처명 검색</label>
+                        <label style="font-size: 12px; font-weight: bold; color: #475569;">거래처/외주처명 검색</label>
                         <input type="text" id="filterCompany" placeholder="예: 공조인라인 (빈칸 시 전체조회)" oninput="renderShipTable()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; width: 100%; margin-top:4px;">
                     </div>
                     <div style="flex: 1; min-width: 200px;">
-                        <label style="font-size: 12px; font-weight: bold; color: #475569;">📅 특정 출하 날짜 지정</label>
+                        <label style="font-size: 12px; font-weight: bold; color: #475569;">특정 출하 날짜 지정</label>
                         <input type="date" id="filterDate" onchange="renderShipTable()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; width: 100%; margin-top:4px;">
                     </div>
-                    <button type="button" class="btn" onclick="resetShipFilter()" style="margin: 0; width: auto; padding: 9px 15px; background: #64748b;">🔄 필터 초기화</button>
+                    <button type="button" class="btn" onclick="resetShipFilter()" style="margin: 0; width: auto; padding: 9px 15px; background: #64748b;">필터 초기화</button>
                 </div>
 
                 <div class="table-wrapper">
                     <table>
                         <thead>
-                            <tr><th>출하 확정일</th><th>납품처(외주처)</th><th>품번</th><th>품명</th><th class="text-right">출하수량</th><th>지정 차량</th><th>📦 포장 박스명</th></tr>
+                            <tr><th>출하 확정일</th><th>납품처(외주처)</th><th>품번</th><th>품명</th><th class="text-right">출하수량</th><th>지정 차량</th><th>포장 박스명</th></tr>
                         </thead>
                         <tbody id="shipScheduleTableBody"></tbody>
                     </table>
@@ -346,10 +515,11 @@
             </div>
         </div>
 
+        <!-- 영업 - 차량관리 섹션 -->
         <div id="section-ship-car" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">💸 배송 설비 차량 유지비용 지출 등록</div>
+                    <div class="card-title">배송 설비 차량 유지비용 지출 등록</div>
                     <form id="carForm">
                         <div class="form-control">
                             <label>대상 차량 선택</label>
@@ -368,7 +538,7 @@
                     </form>
                 </div>
                 <div class="card">
-                    <div class="card-title">📊 사내 차량 배송설비 운영 지출 대장</div>
+                    <div class="card-title">사내 차량 배송설비 운영 지출 대장</div>
                     <div class="table-wrapper">
                         <table>
                             <thead>
@@ -381,49 +551,173 @@
             </div>
         </div>
 
+        <!-- 영업 - 명세표출력 섹션 -->
         <div id="section-ship-bill" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">📑 명세표 대상 출하 전표 선택</div>
+                    <div class="card-title">명세표 대상 출하 전표 선택</div>
                     <div class="form-control">
                         <label>출하 이력 건 선택</label>
                         <select id="billSelect" onchange="generateStatementView()"></select>
                     </div>
                     
                     <div class="icon-btn-group">
-                        <button type="button" class="icon-btn btn-print" onclick="printStatement()">🖨️ 실시간 명세표 인쇄</button>
-                        <button type="button" class="icon-btn btn-pdf" onclick="downloadStatementPDF()">💾 PDF 파일 다운로드</button>
+                        <button type="button" class="icon-btn btn-print" onclick="printStatement()">실시간 명세표 인쇄</button>
+                        <button type="button" class="icon-btn btn-pdf" onclick="downloadStatementPDF()">PDF 파일 다운로드</button>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title">📄 거래명세표 프리뷰 양식</div>
+                    <div class="card-title">거래명세표 프리뷰 양식</div>
                     <div id="printArea" class="statement-box"></div>
                 </div>
             </div>
         </div>
 
+        <!-- 품질 섹션 -->
         <div id="section-quality" class="erp-section">
-            <div class="card full-width"><div class="card-title">⚠️ 품질 불량 관리</div><p>생산일보 실적 연동 시스템 작동 중</p></div>
+            <div class="card full-width"><div class="card-title">품질 불량 관리</div><p>생산일보 실적 연동 시스템 작동 중</p></div>
         </div>
+
+        <!-- 근태현황 - 신청 섹션 -->
+        <div id="section-att-reg" class="erp-section">
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">본인 근태 및 휴가 신청서 제출</div>
+                    <form id="attForm">
+                        <div class="form-control"><label>성명 / 계정명</label><input type="text" id="attName" readonly></div>
+                        <div class="form-control"><label>소속 부서</label><input type="text" id="attDept" readonly></div>
+                        <div class="form-control"><label>기준 일자</label><input type="date" id="attDate" value="2026-06-04" required></div>
+                        <div class="form-control">
+                            <label>근태 구분 선택</label>
+                            <select id="attType" onchange="toggleOvertimeField()">
+                                <option value="출근">정상 출근 기록</option>
+                                <option value="연차">연차 (종일 휴가)</option>
+                                <option value="오전반차">오전 반차</option>
+                                <option value="오후반차">오후 반차</option>
+                                <option value="조퇴">조퇴</option>
+                                <option value="지각">지각</option>
+                            </select>
+                        </div>
+                        <div class="form-control" id="overtimeFieldWrapper">
+                            <label>연장 근무 시간 (시간 단위 기입)</label>
+                            <input type="number" id="attOvertime" value="0" min="0" max="24" step="0.5">
+                        </div>
+                        <button type="submit" class="btn" style="background:#1e3a8a;">부서 결재 라인 상신</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">나의 상신 결재 이력 및 결과 상태</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>신청일자</th><th>근태유형</th><th class="text-right">연장근무</th><th>결재현황</th></tr>
+                            </thead>
+                            <tbody id="myAttTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 근태현황 - 목록 및 결재 섹션 -->
+        <div id="section-att-list" class="erp-section">
+            <div class="card full-width">
+                <div class="card-title" id="attListTitle">부서별 종합 근태 모니터링 원장</div>
+                
+                <div class="filter-box">
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: #475569;">조회 대상 부서 선택</label>
+                        <select id="attFilterDept" onchange="onDeptFilterChange()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size:13px; width:180px; margin-top:4px;">
+                            <option value="전체">전체 부서 종합</option>
+                            <option value="조립">조립 부서</option>
+                            <option value="사출">사출 부서</option>
+                            <option value="영업">영업 부서</option>
+                            <option value="자재">자재 부서</option>
+                            <option value="품질">품질 부서</option>
+                            <option value="관리">관리 부서</option>
+                            <option value="기획">기획 부서</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 근태 관리팀 전용 전산 스케줄러 달력 -->
+                <div class="calendar-box" style="margin-bottom:25px; border:1px solid #cbd5e1;">
+                    <div class="calendar-header-bar" style="background:#f8fafc; padding:10px; margin-bottom:10px;">
+                        <div style="font-size:15px; font-weight:bold; color:#1e3a8a;">근태 배치 분석 캘린더</div>
+                    </div>
+                    <div class="calendar-grid" id="attendanceCalendarGrid"></div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>일자</th><th>부서명</th><th>성명</th><th>구분</th><th class="text-right">연장근무</th><th>상태</th><th>부서장 승인권한</th></tr>
+                        </thead>
+                        <tbody id="globalAttTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 시스템관리 섹션 -->
         <div id="section-system" class="erp-section">
-            <div class="card full-width"><div class="card-title">⚙️ 마스터 데이터 및 공장 시스템 설정</div><p>인프라 환경 정상 가동 중</p></div>
+            <div class="card full-width"><div class="card-title">마스터 데이터 및 공장 시스템 설정</div><p>인프라 환경 정상 가동 중</p></div>
         </div>
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // 사용자 정보 마스터 구조
+            const userMasterData = {
+                "admin": { name: "최고관리자(통합)", dept: "전체", role: "admin" },
+                "assem": { name: "조립팀장", dept: "조립", role: "manager" },
+                "inject": { name: "사출팀장", dept: "사출", role: "manager" },
+                "sales": { name: "영업팀장", dept: "영업", role: "manager" },
+                "mat": { name: "자재팀장", dept: "자재", role: "manager" },
+                "qual": { name: "품질팀장", dept: "품질", role: "manager" },
+                "manage": { name: "관리팀장", dept: "관리", role: "manager" },
+                "plan": { name: "기획팀장", dept: "기획", role: "manager" }
+            };
+
+            let loggedInUser = null;
+
             // 🔐 로그인 폼 제어 및 강제 데이터 바인딩 연동
             const loginForm = document.getElementById("loginForm");
             loginForm.addEventListener("submit", function(e) {
                 e.preventDefault();
                 const uid = document.getElementById("userId").value;
                 const upw = document.getElementById("userPw").value;
-                if(uid === "admin" && upw === "1234") {
+                
+                if(userMasterData[uid] && upw === "1234") {
+                    loggedInUser = { id: uid, ...userMasterData[uid] };
+                    
                     document.getElementById("login-section").style.display = "none";
                     document.getElementById("erp-main-content").style.display = "block";
                     
-                    // 로그인 통과 시 순차 렌더링 강제 실행 (달력 깨짐 완벽 조치)
+                    // 상단 헤더 유저 인포 장착
+                    document.getElementById("current-user-badge").innerText = `[${loggedInUser.dept}] ${loggedInUser.name}`;
+                    
+                    // 근태 등록 폼 세팅
+                    document.getElementById("attName").value = loggedInUser.name;
+                    document.getElementById("attDept").value = loggedInUser.dept;
+
+                    // 부서장의 경우 근태 현황판 조회 기본 필터를 자기 부서로 고정
+                    const selectDept = document.getElementById("attFilterDept");
+                    if (loggedInUser.role === "manager") {
+                        selectDept.value = loggedInUser.dept;
+                        selectDept.disabled = true; 
+                    } else {
+                        selectDept.value = "전체";
+                        selectDept.disabled = false; 
+                    }
+
                     initSelectBoxes();
+                    
+                    // 🏠 로그인 즉시 홈 화면(달력 화면)으로 연동 처리
+                    clearAllDisplay();
+                    document.getElementById("menu-dash").classList.add("active");
+                    document.getElementById("section-dash").style.display = "block";
+                    
                     refreshAllTables();
                 } else {
                     alert("아이디 또는 비밀번호가 일치하지 않습니다.");
@@ -431,6 +725,7 @@
             });
 
             document.getElementById("btnLogout").addEventListener("click", function() {
+                loggedInUser = null;
                 document.getElementById("login-section").style.display = "flex";
                 document.getElementById("erp-main-content").style.display = "none";
             });
@@ -441,7 +736,9 @@
                 { id: "KA4-LHD-H30153-4360", name: "DOOR ASS'Y-TEMP,LH", type: "완제품", price: 1096, matId: "MAT-ABS-02" },
                 { id: "NQ5-H30153-4290", name: "DOOR ASS'Y-DEF", type: "완제품", price: 720, matId: "MAT-PP-01" },
                 { id: "MAT-PP-01", name: "폴리프로필렌 사출 수지 레진", type: "원재료", price: 180, matId: "-" },
-                { id: "MAT-ABS-02", name: "ABS 고충격 수지재", type: "원재료", price: 250, matId: "-" }
+                { id: "MAT-ABS-02", name: "ABS 고충격 수지재", type: "원재료", price: 250, matId: "-" },
+                { id: "MAT-BOX-01", name: "종이 판넬 대형 골판지 상자", type: "부자재", price: 1200, matId: "-" },
+                { id: "MAT-BOLT-05", name: "M4 체결용 고강도 볼트 핀", type: "자재", price: 45, matId: "-" }
             ];
 
             let buyData = JSON.parse(localStorage.getItem('erpBuys')) || [];
@@ -453,6 +750,29 @@
                 { company: "공조인라인", id: "KA4-H41243-4950-2", price: 494, qty: 2880, lot: "LOT-SH-2601", date: "2026-05-27", boxName: "BOX-KA4-01 (KA4 전용 카톤대형)", carNo: "장운 1호차 (1톤)" }
             ];
             let carData = JSON.parse(localStorage.getItem('erpCars')) || [];
+            
+            let attendanceData = JSON.parse(localStorage.getItem('erpAttendance')) || [
+                { id: 1001, date: "2026-05-27", name: "김조립 사원", dept: "조립", type: "출근", overtime: 2, status: "승인", uid: "user_assem" },
+                { id: 1002, date: "2026-05-27", name: "박품질 대리", dept: "품질", type: "출근", overtime: 0, status: "승인", uid: "user_qual" },
+                { id: 1003, date: "2026-05-28", name: "최사출 과장", dept: "사출", type: "지각", overtime: 1, status: "승인", uid: "user_inject" }
+            ];
+
+            let moldData = JSON.parse(localStorage.getItem('erpMolds')) || [
+                { id: 91, logDate: "2026-06-04", moldId: "MOLD-KA4-DOOR-01", inDate: "2026-01-15", repair: "정밀 코어 피치 미세 조정", wash: "가스 레이저 클리닝 세척" }
+            ];
+
+            // 🔧 조립부서 엑셀 연동 데이터베이스 (작업일지 및 설비 유실 내역)
+            let assemReportData = JSON.parse(localStorage.getItem('erpAssemReports')) || [
+                { date: "2026-05-06", line: "YB PE", product: "HVRC", qty: 36 },
+                { date: "2026-05-06", line: "YB PE", product: "HVAA", qty: 60 },
+                { date: "2026-05-30", line: "HVAC", product: "일반", qty: 80 },
+                { date: "2026-05-30", line: "HVAC", product: "HEV", qty: 550 }
+            ];
+
+            let assemLossData = JSON.parse(localStorage.getItem('erpAssemLoss')) || [
+                { date: "2026-05-06", line: "YB PE", code: "102 - 부자재 결품", start: "08:00", end: "12:00", reason: "PTC없음" },
+                { date: "2026-05-07", line: "YB PE", code: "102 - 부자재 결품", start: "09:00", end: "10:30", reason: "블로워 LHD없음" }
+            ];
 
             function initSelectBoxes() {
                 const targets = ["buyItemSelect", "ordItemSelect", "planItemSelect", "directItemSelect", "reportItemSelect", "shipItemSelect"];
@@ -492,6 +812,10 @@
                 renderShipTable();
                 renderCarTable();
                 updateBillSelect();
+                renderMyAttendanceTable();
+                renderGlobalAttendanceTable();
+                renderMoldTable();
+                renderAssemTables(); // 🔧 조립 부서 테이블 호출 추가
             }
 
             function updateInventoryTable() {
@@ -512,7 +836,6 @@
                 });
             }
 
-            // 달력 렌더링 엔진
             window.renderCalendar = function() {
                 const grid = document.getElementById("calendarGrid"); if(!grid) return; grid.innerHTML = "";
                 const selectedMonth = parseInt(document.getElementById("monthSelect").value) || 5;
@@ -532,8 +855,97 @@
                 for(let d = 1; d <= totalDays; d++) {
                     const dow = new Date(2026, selectedMonth - 1, d).getDay();
                     let c = "calendar-cell"; if(dow === 0) c += " sun"; if(dow === 6) c += " sat";
-                    grid.innerHTML += `<div class="${c}"><div class="day-num">${d}</div><div class="cal-data" id="cal-day-${selectedMonth}-${d}"></div></div>`;
+                    
+                    const dateString = `2026-${String(selectedMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    
+                    let dayBuy = 0;
+                    buyData.forEach(b => {
+                        if(b.date === dateString) {
+                            const itm = defaultItems.find(item => item.id === b.id);
+                            const price = itm ? itm.price : 0;
+                            dayBuy += (b.qty * price);
+                        }
+                    });
+
+                    let daySell = 0;
+                    shipData.forEach(s => {
+                        if(s.date === dateString) daySell += (s.qty * s.price);
+                    });
+
+                    let buyText = dayBuy > 0 ? `<div class="cal-price-buy">매입:${dayBuy.toLocaleString()}원</div>` : "";
+                    let sellText = daySell > 0 ? `<div class="cal-price-sell">매출:${daySell.toLocaleString()}원</div>` : "";
+
+                    grid.innerHTML += `
+                        <div class="${c}">
+                            <div class="day-num">${d}</div>
+                            ${buyText}
+                            ${sellText}
+                        </div>`;
                 }
+            };
+
+            window.renderAttendanceCalendar = function() {
+                const grid = document.getElementById("attendanceCalendarGrid"); if(!grid) return; grid.innerHTML = "";
+                const selectedMonth = 5; 
+
+                const weeks = ["일", "월", "화", "수", "목", "금", "토"];
+                weeks.forEach((w, i) => {
+                    let c = "calendar-day-header"; if(i===0) c+=" sun"; if(i===6) c+=" sat";
+                    grid.innerHTML += `<div class="${c}">${w}</div>`;
+                });
+
+                const firstDayIdx = new Date(2026, selectedMonth - 1, 1).getDay();
+                for(let i = 0; i < firstDayIdx; i++) grid.innerHTML += `<div class="calendar-cell empty"></div>`;
+
+                const totalDays = 31; 
+                const filterDept = document.getElementById("attFilterDept").value;
+
+                for(let d = 1; d <= totalDays; d++) {
+                    const dow = new Date(2026, selectedMonth - 1, d).getDay();
+                    let c = "calendar-cell"; if(dow === 0) c += " sun"; if(dow === 6) c += " sat";
+                    
+                    const dateString = `2026-${String(selectedMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    
+                    let count = 0;
+                    attendanceData.forEach(a => {
+                        if(a.date === dateString && a.status === "승인") {
+                            if(a.type === "출근" || a.type === "지각" || a.type === "조퇴") {
+                                if(filterDept === "전체" || a.dept === filterDept) count++;
+                            }
+                        }
+                    });
+
+                    let displayHtml = "";
+                    if(count > 0) {
+                        if(filterDept === "전체") {
+                            displayHtml = `<div class="cal-att-count">총 출근인원 ${count}명</div>`;
+                        } else {
+                            displayHtml = `<div class="cal-att-count" style="background:#dbeafe; color:#2563eb;">${filterDept} ${count}명</div>`;
+                        }
+                    }
+
+                    grid.innerHTML += `
+                        <div class="${c}" style="min-height:75px;">
+                            <div class="day-num">${d}</div>
+                            ${displayHtml}
+                        </div>`;
+                }
+            };
+
+            window.onDeptFilterChange = function() {
+                renderGlobalAttendanceTable();
+                renderAttendanceCalendar();
+            };
+
+            window.renderMaterialView = function(categoryType) {
+                const tbody = document.getElementById("matViewTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                const titleEl = document.getElementById("matViewTitle");
+                titleEl.innerText = `${categoryType} 품목 마스터 장부`;
+
+                const filtered = defaultItems.filter(item => item.type === categoryType);
+                filtered.forEach(m => {
+                    tbody.innerHTML += `<tr><td><strong>${m.id}</strong></td><td>${m.name}</td><td><span class="badge" style="background:#475569;">${m.type}</span></td><td class="text-right">${m.price.toLocaleString()} 원</td></tr>`;
+                });
             };
 
             function renderBuyTable() {
@@ -560,12 +972,28 @@
                 });
             }
 
-            // 🚛 출하일보 및 스마트 필터 기능 스케줄 결합 렌더링
+            // 🔧 조립 실적 장부 및 설비 유실 테이블 렌더링 엔진
+            function renderAssemTables() {
+                const rBody = document.getElementById("assemReportTableBody");
+                if(rBody) {
+                    rBody.innerHTML = "";
+                    assemReportData.forEach(r => {
+                        rBody.innerHTML += `<tr><td>${r.date}</td><td><strong style="color:#1e3a8a;">${r.line}</strong></td><td>${r.product}</td><td class="text-right" style="color:#16a34a; font-weight:bold;">${r.qty.toLocaleString()} 개</td></tr>`;
+                    });
+                }
+                const lBody = document.getElementById("assemLossTableBody");
+                if(lBody) {
+                    lBody.innerHTML = "";
+                    assemLossData.forEach(l => {
+                        lBody.innerHTML += `<tr><td>${l.date}</td><td><strong style="color:#1e3a8a;">${l.line}</strong></td><td>${l.code}</td><td>${l.start} ~ ${l.end}</td><td><span style="color:#dc2626;">${l.reason}</span></td></tr>`;
+                    });
+                }
+            }
+
             window.renderShipTable = function() {
                 const tbody = document.getElementById("shipTableBody"); if(!tbody) return; tbody.innerHTML = "";
                 const schedBody = document.getElementById("shipScheduleTableBody"); if(!schedBody) return; schedBody.innerHTML = "";
                 
-                // 필터 값 획득
                 const fCompany = document.getElementById("filterCompany").value.trim().toLowerCase();
                 const fDate = document.getElementById("filterDate").value;
 
@@ -573,10 +1001,8 @@
                     const total = s.qty * s.price;
                     const itm = defaultItems.find(i => i.id === s.id);
                     
-                    // 기본 출하 대장 출력
                     tbody.innerHTML += `<tr><td>${s.date}</td><td>${s.company}</td><td><strong>${s.id}</strong></td><td class="text-right">${s.qty.toLocaleString()}</td><td class="text-right">${s.price}</td><td class="text-right"><strong>${total.toLocaleString()}</strong></td><td>${s.carNo}</td><td>${s.boxName || '-'}</td><td>${s.lot}</td></tr>`;
                     
-                    // 스케줄 필터링 조건 분기 계산
                     const matchesCompany = fCompany === "" || s.company.toLowerCase().includes(fCompany);
                     const matchesDate = fDate === "" || s.date === fDate;
 
@@ -630,28 +1056,26 @@
                         <div class="statement-title">거 래 명 세 표</div>
                         <div style="text-align:right; font-size:11px; margin-bottom:10px;">출하일자: ${s.date} (공급받는자 보관용)</div>
                         <table style="width:100%; border:2px solid #1e3a8a; border-collapse:collapse; font-size:12px;">
-                            <tr><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급자</td><td style="border:1px solid #cbd5e1; padding:8px;">장운5공장 사출/포장사업부</td><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급받는자</td><td style="border:1px solid #cbd5e1; padding:8px;"><strong>${s.company} 귀하</strong></td></tr>
+                            <tr><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급자</td><td style="border:1px solid #cbd5e1; padding:8px;">장운산업 사출/포장사업부</td><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급받는자</td><td style="border:1px solid #cbd5e1; padding:8px;"><strong>${s.company} 귀하</strong></td></tr>
                             <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">출하 품번</td><td style="border:1px solid #cbd5e1; padding:8px;">${s.id}</td><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">규격 품명</td><td style="border:1px solid #cbd5e1; padding:8px;">${itm?itm.name:''}</td></tr>
                             <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">포장 박스명</td><td style="border:1px solid #cbd5e1; padding:8px; color:#2563eb;">${s.boxName || '-'}</td><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">지정 배송차량</td><td style="border:1px solid #cbd5e1; padding:8px;">${s.carNo}</td></tr>
                             <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">출하 수량</td><td class="text-right" style="border:1px solid #cbd5e1; padding:8px;"><strong>${s.qty.toLocaleString()} 개</strong></td><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">단가 / 공급액</td><td class="text-right" style="border:1px solid #cbd5e1; padding:8px;">₩${s.price.toLocaleString()} / <strong>₩${totalAmt.toLocaleString()}</strong></td></tr>
                             <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">출하 LOT번호</td><td colspan="3" style="border:1px solid #cbd5e1; padding:8px;"><strong>${s.lot}</strong></td></tr>
                         </table>
-                        <p style="font-size:11px; color:#64748b; margin-top:15px; text-align:center;">위 물품을 정히 공급합니다. (장운5공장 전산 인쇄본)</p>
+                        <p style="font-size:11px; color:#64748b; margin-top:15px; text-align:center;">위 물품을 정히 공급합니다. (장운산업 전산 인쇄본)</p>
                     </div>
                 `;
             };
 
-            // 🖨️ 인쇄 스크립트 기능 
             window.printStatement = function() {
                 const target = document.getElementById("pdf-target-zone").innerHTML;
                 const orig = document.body.innerHTML;
                 document.body.innerHTML = "<div style='padding:40px; background:white;'>" + target + "</div>";
                 window.print();
                 document.body.innerHTML = orig;
-                window.location.reload(); // 원복 유도구조
+                window.location.reload();
             };
 
-            // 💾 PDF 다운로드 스크립트 기능
             window.downloadStatementPDF = function() {
                 const element = document.getElementById("pdf-target-zone");
                 const idx = document.getElementById("billSelect").value;
@@ -666,7 +1090,171 @@
                 html2pdf().set(opt).from(element).save();
             };
 
-            // 폼 전송 바인딩 처리 연동
+            window.toggleOvertimeField = function() {
+                const type = document.getElementById("attType").value;
+                const wrapper = document.getElementById("overtimeFieldWrapper");
+                if(type === "출근" || type === "조퇴" || type === "지각") {
+                    wrapper.style.display = "flex";
+                } else {
+                    wrapper.style.display = "none";
+                    document.getElementById("attOvertime").value = 0;
+                }
+            };
+
+            function renderMyAttendanceTable() {
+                const tbody = document.getElementById("myAttTableBody");
+                if(!tbody || !loggedInUser) return;
+                tbody.innerHTML = "";
+
+                const records = attendanceData.filter(a => a.uid === loggedInUser.id);
+                if(records.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8;">신청된 근태 장부가 없습니다.</td></tr>`;
+                    return;
+                }
+
+                records.forEach(r => {
+                    let bColor = "badge-waiting";
+                    if(r.status === "승인") bColor = "badge-approved";
+                    if(r.status === "반려") bColor = "badge-rejected";
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${r.date}</td>
+                            <td><strong>${r.type}</strong></td>
+                            <td class="text-right">${r.overtime > 0 ? r.overtime + " 시간" : "-"}</td>
+                            <td><span class="badge ${bColor}">${r.status}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            window.renderGlobalAttendanceTable = function() {
+                const tbody = document.getElementById("globalAttTableBody");
+                if(!tbody || !loggedInUser) return;
+                tbody.innerHTML = "";
+
+                const filterDept = document.getElementById("attFilterDept").value;
+                const titleEl = document.getElementById("attListTitle");
+
+                if(loggedInUser.role === "manager") {
+                    titleEl.innerText = `[${loggedInUser.dept}부] 소속 결재 관리 전산 원장`;
+                } else {
+                    titleEl.innerText = `통합 부서 종합 근태 모니터링 원장 (최고관리자)`;
+                }
+
+                attendanceData.forEach((a, idx) => {
+                    if(filterDept !== "전체" && a.dept !== filterDept) return;
+
+                    let bColor = "badge-waiting";
+                    if(a.status === "승인") bColor = "badge-approved";
+                    if(a.status === "반려") bColor = "badge-rejected";
+
+                    let actionCol = "-";
+                    if(a.status === "대기") {
+                        if(loggedInUser.role === "admin" || (loggedInUser.role === "manager" && loggedInUser.dept === a.dept)) {
+                            actionCol = `
+                                <button class="btn-mini btn-approve" onclick="processAttendance(${a.id}, '승인')">승인</button>
+                                <button class="btn-mini btn-reject" onclick="processAttendance(${a.id}, '반려')">반려</button>
+                            `;
+                        }
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${a.date}</td>
+                            <td><span style="font-weight:bold; color:#1e3a8a;">${a.dept}</span></td>
+                            <td>${a.name}</td>
+                            <td><strong>${a.type}</strong></td>
+                            <td class="text-right">${a.overtime > 0 ? a.overtime + " 시간" : "-"}</td>
+                            <td><span class="badge ${bColor}">${a.status}</span></td>
+                            <td>${actionCol}</td>
+                        </tr>
+                    `;
+                });
+            };
+
+            window.processAttendance = function(id, statusResult) {
+                const index = attendanceData.findIndex(a => a.id === id);
+                if(index > -1) {
+                    attendanceData[index].status = statusResult;
+                    localStorage.setItem('erpAttendance', JSON.stringify(attendanceData));
+                    refreshAllTables();
+                    alert(`해당 신청 건이 성공적으로 [${statusResult}] 처리되었습니다.`);
+                }
+            };
+
+            function renderMoldTable() {
+                const tbody = document.getElementById("moldTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                moldData.forEach(m => {
+                    tbody.innerHTML += `<tr><td>${m.logDate}</td><td><strong>${m.moldId}</strong></td><td>${m.inDate}</td><td>${m.repair || '-'}</td><td>${m.wash || '-'}</td></tr>`;
+                });
+            }
+
+            document.getElementById("moldForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                moldData.push({
+                    id: Date.now(),
+                    moldId: document.getElementById("moldId").value,
+                    inDate: document.getElementById("moldInDate").value,
+                    repair: document.getElementById("moldRepair").value,
+                    wash: document.getElementById("moldWash").value,
+                    logDate: document.getElementById("moldLogDate").value
+                });
+                localStorage.setItem('erpMolds', JSON.stringify(moldData));
+                renderMoldTable();
+                alert("금형 마스터 이력 추가 반영 완료!");
+            });
+
+            // 🔧 조립부서 실적마감 데이터 폼 제출 이벤트 연동
+            document.getElementById("assemReportForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                assemReportData.push({
+                    line: document.getElementById("assemLine").value,
+                    product: document.getElementById("assemProduct").value,
+                    qty: parseInt(document.getElementById("assemQty").value)||0,
+                    date: document.getElementById("assemDate").value
+                });
+                localStorage.setItem('erpAssemReports', JSON.stringify(assemReportData));
+                renderAssemTables();
+                alert("당일 조립 실적이 성공적으로 시스템에 마감되었습니다.");
+            });
+
+            // 🔧 조립부서 설비유실 데이터 폼 제출 이벤트 연동
+            document.getElementById("assemLossForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                assemLossData.push({
+                    line: document.getElementById("lossLine").value,
+                    code: document.getElementById("lossCode").value,
+                    start: document.getElementById("lossStartTime").value,
+                    end: document.getElementById("lossEndTime").value,
+                    reason: document.getElementById("lossReason").value,
+                    date: document.getElementById("lossDate").value
+                });
+                localStorage.setItem('erpAssemLoss', JSON.stringify(assemLossData));
+                renderAssemTables();
+                alert("설비 유실 및 비가동 내역이 기록되었습니다.");
+            });
+
+            document.getElementById("attForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                
+                const newRecord = {
+                    id: Date.now(),
+                    date: document.getElementById("attDate").value,
+                    name: loggedInUser.name,
+                    dept: loggedInUser.dept,
+                    type: document.getElementById("attType").value,
+                    overtime: parseFloat(document.getElementById("attOvertime").value) || 0,
+                    status: "대기",
+                    uid: loggedInUser.id
+                };
+
+                attendanceData.push(newRecord);
+                localStorage.setItem('erpAttendance', JSON.stringify(attendanceData));
+                refreshAllTables();
+                alert("근태 결재 신청이 완료되었습니다. 부서장 승인 후 최종 처리됩니다.");
+            });
+
             document.getElementById("shipForm").addEventListener("submit", function(e) {
                 e.preventDefault();
                 shipData.push({
@@ -715,13 +1303,20 @@
                 localStorage.setItem('erpCars', JSON.stringify(carData)); refreshAllTables(); alert("차량 전표 기록 완료");
             });
 
-            // 네비게이션 제어 스크립트 허브
-            const sections = ["section-dash", "section-buy", "section-order", "section-plan", "section-direct", "section-report", "section-ship-report", "section-ship-schedule", "section-ship-car", "section-ship-bill", "section-quality", "section-system"];
+            // 네비게이션 복합 허브 구조 (조립 섹션 독립화 완료)
+            const sections = [
+                "section-dash", "section-mat-view", "section-mat-stock", "section-buy", "section-order", "section-plan", "section-direct", 
+                "section-report", "section-mold", "section-ship-report", "section-ship-schedule", "section-ship-car", 
+                "section-ship-bill", "section-assem", "section-quality", "section-system", "section-att-reg", "section-att-list"
+            ];
             
-            function clearAllDisplay() {
+            window.clearAllDisplay = function() {
                 sections.forEach(s => { const el = document.getElementById(s); if(el) el.style.display="none"; });
+                document.getElementById("matSubNav").style.display = "none";
                 document.getElementById("prodSubNav").style.display = "none";
-                document.getElementById("shipSubNav").style.display = "none";
+                document.getElementById("assemSubNav").style.display = "none";
+                document.getElementById("salesSubNav").style.display = "none";
+                document.getElementById("attendanceSubNav").style.display = "none";
                 document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
             }
 
@@ -730,21 +1325,71 @@
             document.getElementById("menu-quality").addEventListener("click", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-quality").style.display="block"; });
             document.getElementById("menu-system").addEventListener("click", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-system").style.display="block"; });
             
+            // 자재 메인 카테고리
+            document.getElementById("menu-mat").addEventListener("click", function() {
+                clearAllDisplay(); this.classList.add("active");
+                document.getElementById("matSubNav").style.display = "flex";
+                document.getElementById("sub-mat-raw").classList.add("active");
+                document.getElementById("section-mat-view").style.display = "block";
+                renderMaterialView("원재료");
+            });
+
+            // 생산 메인 카테고리
             document.getElementById("menu-prod").addEventListener("click", function() {
                 clearAllDisplay(); this.classList.add("active");
                 document.getElementById("prodSubNav").style.display = "flex";
-                document.getElementById("sub-order").classList.add("active");
-                document.getElementById("section-order").style.display = "block";
+                document.getElementById("sub-prod-plan").classList.add("active");
+                document.getElementById("section-plan").style.display = "block";
             });
 
-            document.getElementById("menu-ship").addEventListener("click", function() {
+            // 🔧 조립 메인 카테고리 (형제로 완벽 분리 복원)
+            document.getElementById("menu-assem").addEventListener("click", function() {
                 clearAllDisplay(); this.classList.add("active");
-                document.getElementById("shipSubNav").style.display = "flex";
+                document.getElementById("assemSubNav").style.display = "flex";
+                document.getElementById("sub-assem-report").classList.add("active");
+                document.getElementById("section-assem").style.display = "block";
+            });
+
+            // 영업 메인 카테고리
+            document.getElementById("menu-sales").addEventListener("click", function() {
+                clearAllDisplay(); this.classList.add("active");
+                document.getElementById("salesSubNav").style.display = "flex";
                 document.getElementById("sub-ship-report").classList.add("active");
                 document.getElementById("section-ship-report").style.display = "block";
             });
 
-            const prodSubTabs = { "sub-order":"section-order", "sub-plan":"section-plan", "sub-direct":"section-direct", "sub-report":"section-report" };
+            // 근태현황 메인 카테고리
+            document.getElementById("menu-attendance").addEventListener("click", function() {
+                clearAllDisplay(); this.classList.add("active");
+                document.getElementById("attendanceSubNav").style.display = "flex";
+                document.getElementById("sub-att-reg").classList.add("active");
+                document.getElementById("section-att-reg").style.display = "block";
+                toggleOvertimeField();
+            });
+
+            // 자재 서브 탭 제어
+            const matSubTabs = { "sub-mat-raw":"원재료", "sub-mat-part":"자재", "sub-mat-sub":"부자재" };
+            Object.keys(matSubTabs).forEach(sid => {
+                document.getElementById(sid).addEventListener("click", function() {
+                    document.querySelectorAll("#matSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
+                    this.classList.add("active");
+                    sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
+                    document.getElementById("matSubNav").style.display = "flex";
+                    document.getElementById("section-mat-view").style.display = "block";
+                    renderMaterialView(matSubTabs[sid]);
+                });
+            });
+            document.getElementById("sub-mat-stock").addEventListener("click", function() {
+                document.querySelectorAll("#matSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
+                this.classList.add("active");
+                sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
+                document.getElementById("matSubNav").style.display = "flex";
+                document.getElementById("section-mat-stock").style.display = "block";
+                updateInventoryTable();
+            });
+
+            // 생산 서브 탭 제어
+            const prodSubTabs = { "sub-prod-plan":"section-plan", "sub-prod-direct":"section-direct", "sub-prod-report":"section-report", "sub-prod-mold":"section-mold" };
             Object.keys(prodSubTabs).forEach(sid => {
                 document.getElementById(sid).addEventListener("click", function() {
                     document.querySelectorAll("#prodSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
@@ -752,17 +1397,42 @@
                     sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
                     document.getElementById("prodSubNav").style.display = "flex";
                     document.getElementById(prodSubTabs[sid]).style.display = "block";
+                    if(sid === "sub-prod-mold") renderMoldTable();
                 });
             });
 
-            const shipSubTabs = { "sub-ship-report":"section-ship-report", "sub-ship-schedule":"section-ship-schedule", "sub-ship-car":"section-ship-car", "sub-ship-bill":"section-ship-bill" };
-            Object.keys(shipSubTabs).forEach(sid => {
+            // 🔧 조립 서브 탭 제어
+            document.getElementById("sub-assem-report").addEventListener("click", function() {
+                document.querySelectorAll("#assemSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
+                this.classList.add("active");
+                sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
+                document.getElementById("assemSubNav").style.display = "flex";
+                document.getElementById("section-assem").style.display = "block";
+            });
+
+            // 영업 서브 탭 제어
+            const salesSubTabs = { "sub-ship-report":"section-ship-report", "sub-ship-schedule":"section-ship-schedule", "sub-ship-car":"section-ship-car", "sub-ship-bill":"section-ship-bill" };
+            Object.keys(salesSubTabs).forEach(sid => {
                 document.getElementById(sid).addEventListener("click", function() {
-                    document.querySelectorAll("#shipSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
+                    document.querySelectorAll("#salesSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
                     this.classList.add("active");
                     sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
-                    document.getElementById("shipSubNav").style.display = "flex";
-                    document.getElementById(shipSubTabs[sid]).style.display = "block";
+                    document.getElementById("salesSubNav").style.display = "flex";
+                    document.getElementById(salesSubTabs[sid]).style.display = "block";
+                });
+            });
+
+            // 근태현황 서브 탭 제어
+            const attendanceSubTabs = { "sub-att-reg": "section-att-reg", "sub-att-list": "section-att-list" };
+            Object.keys(attendanceSubTabs).forEach(sid => {
+                document.getElementById(sid).addEventListener("click", function() {
+                    document.querySelectorAll("#attendanceSubNav .sub-nav-item").forEach(si => si.classList.remove("active"));
+                    this.classList.add("active");
+                    sections.forEach(s => { if(s.startsWith("section-")) document.getElementById(s).style.display="none"; });
+                    document.getElementById("attendanceSubNav").style.display = "flex";
+                    document.getElementById(attendanceSubTabs[sid]).style.display = "block";
+                    if(sid === "sub-att-reg") toggleOvertimeField();
+                    if(sid === "sub-att-list") onDeptFilterChange();
                 });
             });
 
