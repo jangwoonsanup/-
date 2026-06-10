@@ -6,13 +6,15 @@
     <title>장운산업 ERP 시스템</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         
+        /* 🔐 로그인 섹션 스타일 */
         .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; flex-direction: column; }
         .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
         
-        /* 🔥 CSS 3D 로고 디자인 (이미지 없을 때 대체) */
         .css-logo { 
             font-size: 42px; font-weight: 900; letter-spacing: -2px; margin-bottom: 20px;
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #d97706 51%, #f59e0b 100%);
@@ -37,7 +39,7 @@
         .sub-nav-divider { width: 2px; background: #94a3b8; margin: 0 5px; }
         
         .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 25px; margin-bottom: 25px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); height: fit-content; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); height: fit-content; margin-bottom: 25px; }
         .card-title { font-size: 16px; font-weight: bold; color: #1e3a8a; margin-bottom: 15px; border-left: 4px solid #2563eb; padding-left: 8px; }
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px; }
         .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; text-align: center; }
@@ -79,61 +81,33 @@
         .form-control { display: flex; flex-direction: column; margin-bottom: 12px; }
         .form-control label { font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: bold; }
         .form-control input, .form-control select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box; width: 100%; }
-        .form-control input:focus { border-color: #2563eb; outline: none; }
         .btn { background-color: #2563eb; color: white; border: none; padding: 11px; width: 100%; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 14px; }
         .btn:hover { background-color: #1d4ed8; }
         
         .filter-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
-        .icon-btn-group { display: flex; gap: 10px; margin-top: 15px; }
-        .icon-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; color: white; font-size: 14px; }
-        .btn-print { background-color: #1e3a8a; }
-        .btn-pdf { background-color: #dc2626; }
-        .icon-btn:hover { opacity: 0.9; }
-
-        .statement-box { background: #fff; border: 2px solid #1e3a8a; padding: 25px; margin-top: 15px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .statement-title { font-size: 26px; font-weight: bold; text-align: center; color: #1e3a8a; letter-spacing: 8px; margin-bottom: 15px; text-decoration: underline; }
-
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; display: inline-block; text-align: center; }
-        .badge-waiting { background-color: #f59e0b; } 
-        .badge-1st { background-color: #3b82f6; } 
-        .badge-approved { background-color: #10b981; } 
-        .badge-rejected { background-color: #ef4444; } 
-        
-        .btn-mini { padding: 4px 8px; font-size: 11px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 4px; }
-        .btn-1st { background-color: #3b82f6; }
-        .btn-approve { background-color: #10b981; }
-        .btn-reject { background-color: #ef4444; }
-        .btn-view { background-color: #475569; }
-
         .notice-item { padding: 12px 0; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; }
-        .notice-item:last-child { border-bottom: none; }
         .notice-badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; margin-right: 10px; min-width:30px; text-align:center; }
     </style>
 </head>
 <body>
 
-    <!-- 🔐 로그인 화면 -->
     <div id="login-section" class="login-wrapper">
         <div class="login-card">
-            <!-- 이미지 로드 실패 시 CSS 로고로 자동 대체 -->
             <img src="장운로고3D.png" onerror="this.style.display='none'; document.getElementById('css-logo-fallback').style.display='block';" alt="장운산업" style="max-width: 250px; width: 100%; height: auto; margin: 0 auto 10px auto; display: block;">
             <div id="css-logo-fallback" class="css-logo" style="display:none;">JW 장운산업</div>
-            
             <h2>통합 관리 시스템</h2>
             <form id="loginForm">
                 <div class="form-control" style="text-align: left;"><label>사용자 아이디 (ID)</label><input type="text" id="userId" value="admin" placeholder="ID 입력" required></div>
                 <div class="form-control" style="text-align: left;"><label>비밀번호 (Password)</label><input type="password" id="userPw" value="1234" required></div>
                 <button type="submit" class="btn" style="background:#1e3a8a; padding: 13px;">보안 로그인</button>
             </form>
+            <p style="font-size: 12px; color: #64748b; margin-top: 15px;">* 전사 초기 비밀번호는 1234 입니다.</p>
         </div>
     </div>
 
-    <!-- ⚙️ 내부 ERP 메인 화면 -->
     <div id="erp-main-content">
         <div class="erp-header">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <h1 style="margin-right:20px;">장운산업 통합 관리 시스템</h1>
-            </div>
+            <h1>장운산업 통합 관리 시스템</h1>
             <div style="display: flex; align-items: center; gap: 15px;">
                 <span id="current-user-badge" style="font-size: 14px; font-weight: bold; background: #2563eb; padding: 4px 10px; border-radius: 4px;"></span>
                 <button class="btn-logout" id="btnLogout">로그아웃</button>
@@ -155,72 +129,28 @@
             <div class="nav-item" id="menu-system">시스템관리</div>
         </div>
 
-        <!-- 📂 서브 메뉴들 -->
-        <div class="erp-sub-nav" id="boardSubNav">
-            <div class="sub-nav-item active" id="sub-board-notice">사내 공지사항 관리</div>
-        </div>
-
+        <div class="erp-sub-nav" id="boardSubNav"><div class="sub-nav-item active" id="sub-board-notice">사내 공지사항</div></div>
         <div class="erp-sub-nav" id="matSubNav">
-            <div class="sub-nav-item active" id="sub-mat-raw">원재료</div>
-            <div class="sub-nav-item" id="sub-mat-part">자재</div>
-            <div class="sub-nav-item" id="sub-mat-sub">부자재</div>
-            <div class="sub-nav-item" id="sub-mat-buy">자재 입고 등록</div>
-            <div class="sub-nav-item" id="sub-mat-stock">현재고 실적표</div>
+            <div class="sub-nav-item active" id="sub-mat-raw">원재료</div><div class="sub-nav-item" id="sub-mat-part">자재</div><div class="sub-nav-item" id="sub-mat-sub">부자재</div>
+            <div class="sub-nav-item" id="sub-mat-buy">자재 입고 등록</div><div class="sub-nav-item" id="sub-mat-stock">현재고 실적표</div>
         </div>
-
-        <div class="erp-sub-nav" id="equipSubNav">
-            <div class="sub-nav-item active" id="sub-equip-reg">공장 비품 매입 등록</div>
-            <div class="sub-nav-item" id="sub-equip-list">부서별 비품 매입 현황</div>
-        </div>
-
+        <div class="erp-sub-nav" id="equipSubNav"><div class="sub-nav-item active" id="sub-equip-reg">공장 비품 매입 등록</div><div class="sub-nav-item" id="sub-equip-list">부서별 비품 매입 현황</div></div>
         <div class="erp-sub-nav" id="prodSubNav">
-            <div class="sub-nav-item active" id="sub-prod-plan">생산계획</div>
-            <div class="sub-nav-item" id="sub-prod-direct">생산지시</div>
-            <div class="sub-nav-item" id="sub-prod-report">생산일보 (부족/불량분석)</div>
-            <div class="sub-nav-item" id="sub-prod-loss">설비유실(정지) 등록</div> <!-- 신설 -->
-            <div class="sub-nav-item" id="sub-prod-mold">금형이력</div>
+            <div class="sub-nav-item active" id="sub-prod-dash">생산 대시보드</div><div class="sub-nav-item" id="sub-prod-plan">생산계획</div>
+            <div class="sub-nav-item" id="sub-prod-direct">생산지시</div><div class="sub-nav-item" id="sub-prod-report">생산일보</div>
+            <div class="sub-nav-item" id="sub-prod-loss">설비유실 등록</div><div class="sub-nav-item" id="sub-prod-mold">금형이력</div>
         </div>
-
         <div class="erp-sub-nav" id="assemSubNav">
-            <div class="sub-nav-item active" id="sub-hvac-dash">HVAC 대시보드</div>
-            <div class="sub-nav-item" id="sub-hvac-prod">HVAC 생산등록</div>
-            <div class="sub-nav-item" id="sub-hvac-loss">HVAC 유실등록</div>
+            <div class="sub-nav-item active" id="sub-ka4-dash">KA4 대시보드</div><div class="sub-nav-item" id="sub-ka4-prod">KA4 생산등록</div><div class="sub-nav-item" id="sub-ka4-loss">KA4 유실등록</div>
             <div class="sub-nav-divider"></div>
-            <div class="sub-nav-item" id="sub-ybpe-dash">YB PE 대시보드</div>
-            <div class="sub-nav-item" id="sub-ybpe-prod">YB PE 생산등록</div>
-            <div class="sub-nav-item" id="sub-ybpe-loss">YB PE 유실등록</div>
+            <div class="sub-nav-item" id="sub-ybpe-dash">YB PE 대시보드</div><div class="sub-nav-item" id="sub-ybpe-prod">YB PE 생산등록</div><div class="sub-nav-item" id="sub-ybpe-loss">YB PE 유실등록</div>
         </div>
+        <div class="erp-sub-nav" id="gscSubNav"><div class="sub-nav-item active" id="sub-gsc-work">GSC 작업일보 등록</div><div class="sub-nav-item" id="sub-gsc-ship">GSC 출하일보 등록</div></div>
+        <div class="erp-sub-nav" id="packSubNav"><div class="sub-nav-item active" id="sub-pack-work">포장 작업일보 등록</div><div class="sub-nav-item" id="sub-pack-ship">포장 출하일보 등록</div></div>
+        <div class="erp-sub-nav" id="salesSubNav"><div class="sub-nav-item active" id="sub-ship-report">출하일보입력</div><div class="sub-nav-item" id="sub-ship-schedule">출하일정 관리</div><div class="sub-nav-item" id="sub-ship-car">차량관리</div><div class="sub-nav-item" id="sub-ship-bill">명세표 등록/출력</div></div>
+        <div class="erp-sub-nav" id="attendanceSubNav"><div class="sub-nav-item active" id="sub-att-reg">직원 근태/휴가 등록</div><div class="sub-nav-item" id="sub-att-list">부서별 근태 현황 및 결재</div></div>
+        <div class="erp-sub-nav" id="systemSubNav"><div class="sub-nav-item active" id="sub-sys-item">품목 등록</div><div class="sub-nav-item" id="sub-sys-car">차량 등록</div><div class="sub-nav-item" id="sub-sys-emp">직원 등록 관리</div><div class="sub-nav-item" id="sub-sys-code">설비정지 CODE 관리</div></div>
 
-        <div class="erp-sub-nav" id="gscSubNav">
-            <div class="sub-nav-item active" id="sub-gsc-work">GSC 작업일보 등록</div>
-            <div class="sub-nav-item" id="sub-gsc-ship">GSC 출하일보 등록</div>
-        </div>
-
-        <div class="erp-sub-nav" id="packSubNav">
-            <div class="sub-nav-item active" id="sub-pack-work">포장 작업일보 등록</div>
-            <div class="sub-nav-item" id="sub-pack-ship">포장 출하일보 등록</div>
-        </div>
-
-        <div class="erp-sub-nav" id="salesSubNav">
-            <div class="sub-nav-item active" id="sub-ship-report">출하일보입력</div>
-            <div class="sub-nav-item" id="sub-ship-schedule">출하일정 관리</div>
-            <div class="sub-nav-item" id="sub-ship-car">차량관리 (유지비)</div>
-            <div class="sub-nav-item" id="sub-ship-bill">명세표 등록/출력</div>
-        </div>
-
-        <div class="erp-sub-nav" id="attendanceSubNav">
-            <div class="sub-nav-item active" id="sub-att-reg">직원 근태/휴가 등록</div>
-            <div class="sub-nav-item" id="sub-att-list">부서별 근태 현황 및 결재</div>
-        </div>
-
-        <div class="erp-sub-nav" id="systemSubNav">
-            <div class="sub-nav-item active" id="sub-sys-item">품목(마스터) 등록</div>
-            <div class="sub-nav-item" id="sub-sys-car">차량(마스터) 등록</div> 
-            <div class="sub-nav-item" id="sub-sys-emp">직원(명부) 등록 및 관리</div>
-            <div class="sub-nav-item" id="sub-sys-code">설비정지 CODE 관리</div> <!-- 신설 -->
-        </div>
-
-        <!-- 🏠 홈 대시보드 -->
         <div id="section-dash" class="erp-section" style="display:block;">
             <div style="display: grid; grid-template-columns: 2.2fr 1fr; gap: 25px; align-items: start;">
                 <div class="calendar-box">
@@ -229,251 +159,141 @@
                         <div class="calendar-selectors">
                             <select id="yearSelect" onchange="renderCalendar()"><option value="2026" selected>2026년</option></select>
                             <select id="monthSelect" onchange="renderCalendar()">
-                                <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
-                                <option value="4">4월</option><option value="5">5월</option><option value="6" selected>6월</option>
-                                <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
-                                <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+                                <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6" selected>6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
                             </select>
                         </div>
                     </div>
                     <div class="calendar-grid" id="calendarGrid"></div>
                 </div>
-
                 <div style="display: flex; flex-direction: column; gap: 25px;">
-                    <!-- 일일 이슈 등록 폼 -->
-                    <div class="card" style="margin: 0; background:#fff1f2; border:1px solid #fecdd3;">
-                        <div class="card-title" style="color:#e11d48; border-left-color:#e11d48;">🚨 달력 일일 이슈 등록 (관리자용)</div>
+                    <div class="card" style="margin:0; background:#fff1f2; border:1px solid #fecdd3;">
+                        <div class="card-title" style="color:#e11d48; border-left-color:#e11d48;">🚨 달력 일일 이슈 등록</div>
                         <form onsubmit="submitIssue(event)">
-                            <div class="form-control"><label>이슈 발생 일자</label><input type="date" id="issueDate" required></div>
-                            <div class="form-control"><label>이슈 내용</label><input type="text" id="issueContent" placeholder="달력에 표시될 내용 (짧게)" required></div>
-                            <button type="submit" class="btn" style="background:#e11d48;">달력에 이슈 표시하기</button>
+                            <div class="form-control"><label>이슈 날짜</label><input type="date" id="issueDate" required></div>
+                            <div class="form-control"><label>이슈 내용</label><input type="text" id="issueContent" placeholder="달력 표기 내용" required></div>
+                            <button type="submit" class="btn" style="background:#e11d48;">이슈 등록</button>
                         </form>
                     </div>
-
-                    <div class="card" style="margin: 0;">
-                        <div class="card-title">📌 최근 공지사항 (미리보기)</div>
-                        <div id="homeNoticeArea" style="font-size: 13px; color: #334155;">
-                            <!-- 동적 렌더링 -->
-                        </div>
-                    </div>
+                    <div class="card" style="margin: 0;"><div class="card-title">📌 최근 공지사항</div><div id="homeNoticeArea" style="font-size: 13px; color:#334155;"></div></div>
                 </div>
             </div>
         </div>
 
-        <!-- 📢 게시판 - 공지사항 관리 -->
         <div id="section-board-notice" class="erp-section">
-            <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-title">사내 공지사항 신규 등록</div>
-                    <form onsubmit="submitNotice(event)">
-                        <div class="form-control">
-                            <label>공지 분류</label>
-                            <select id="noticeType" required>
-                                <option value="필독">필독</option><option value="공지">공지</option><option value="안내">안내</option>
-                            </select>
-                        </div>
-                        <div class="form-control"><label>공지 제목</label><input type="text" id="noticeTitle" placeholder="제목을 입력하세요" required></div>
-                        <div class="form-control"><label>작성 일자</label><input type="date" id="noticeDate" required></div>
-                        <button type="submit" class="btn" style="background:#1e3a8a;">게시판에 공지 올리기</button>
-                    </form>
+            <div class="card full-width">
+                <div class="card-title">사내 공지사항 게시판</div>
+                <div class="table-wrapper" style="min-height: 200px;">
+                    <table>
+                        <thead><tr><th>분류</th><th>제목</th><th>작성자</th><th>작성일</th><th>관리</th></tr></thead>
+                        <tbody id="noticeTableBody"></tbody>
+                    </table>
                 </div>
-                <div class="card">
-                    <div class="card-title">사내 공지사항 전체 목록 및 검색</div>
-                    <div class="filter-box" style="padding:10px;">
-                        <input type="text" id="filterNotice" oninput="renderNoticeTable()" placeholder="제목 검색" style="padding:4px; font-size:12px; width:200px;">
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>분류</th><th>제목</th><th>작성자</th><th>작성일</th><th>관리</th></tr></thead>
-                            <tbody id="noticeTableBody"></tbody>
-                        </table>
-                    </div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:15px; padding-top:15px; border-top:1px solid #e2e8f0;">
+                    <div><input type="text" id="filterNotice" oninput="renderNoticeTable()" placeholder="제목 검색" style="padding:8px; font-size:13px; width:250px; border:1px solid #cbd5e1; border-radius:4px;"></div>
+                    <button class="btn" style="width:auto; margin:0; padding:10px 20px;" onclick="toggleNoticeForm()">📝 공지 올리기 (글쓰기)</button>
                 </div>
+            </div>
+            <div class="card full-width" id="noticeFormContainer" style="display:none; background:#f8fafc;">
+                <div class="card-title">새 공지 작성</div>
+                <form onsubmit="submitNotice(event)">
+                    <div class="form-control"><label>공지 분류</label><select id="noticeType" required><option value="필독">필독</option><option value="공지">공지</option><option value="안내">안내</option></select></div>
+                    <div class="form-control"><label>공지 제목</label><input type="text" id="noticeTitle" required></div>
+                    <div class="form-control"><label>작성 일자</label><input type="date" id="noticeDate" required></div>
+                    <div style="display:flex; gap:10px; margin-top:10px;"><button type="submit" class="btn">등록</button><button type="button" class="btn" style="background:#64748b;" onclick="toggleNoticeForm()">취소</button></div>
+                </form>
             </div>
         </div>
 
-        <!-- 👨‍💼 시스템관리 - 직원 명부 등록 -->
         <div id="section-sys-emp" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">신규 직원 정보 등록</div>
+                    <div class="card-title">신규 직원 등록</div>
                     <form id="sysEmpForm">
-                        <div class="form-control">
-                            <label>고용 형태</label>
-                            <select id="sysEmpType" onchange="toggleEmpType()" required>
-                                <option value="정직원">정직원 (시스템 ID 부여)</option>
-                                <option value="계약직">계약직/단기직 (근태관리 전용)</option>
-                            </select>
-                        </div>
-                        <div class="form-control"><label>소속 부서</label>
-                            <select id="sysEmpDept" required>
-                                <option value="조립">조립</option><option value="사출">사출</option>
-                                <option value="영업">영업</option><option value="자재">자재</option>
-                                <option value="품질">품질</option><option value="관리">관리</option>
-                                <option value="인사">인사</option><option value="GSC">GSC</option><option value="포장">포장</option>
-                            </select>
-                        </div>
-                        <div class="form-control"><label>성명</label><input type="text" id="sysEmpName" placeholder="예: 홍길동" required></div>
-                        <div class="form-control"><label>연락처</label><input type="text" id="sysEmpPhone" placeholder="예: 010-1234-5678" required></div>
-                        
+                        <div class="form-control"><label>고용 형태</label><select id="sysEmpType" onchange="toggleEmpType()"><option value="정직원">정직원 (시스템 ID 부여)</option><option value="계약직">계약직</option></select></div>
+                        <div class="form-control"><label>소속 부서</label><select id="sysEmpDept"><option value="조립">조립</option><option value="사출">사출</option><option value="영업">영업</option><option value="자재">자재</option><option value="품질">품질</option><option value="관리">관리</option><option value="인사">인사</option><option value="GSC">GSC</option><option value="포장">포장</option></select></div>
+                        <div class="form-control"><label>성명</label><input type="text" id="sysEmpName" required></div>
+                        <div class="form-control"><label>연락처</label><input type="text" id="sysEmpPhone" required></div>
                         <div id="sysEmpFullTimeWrapper">
-                            <div class="form-control"><label>부여할 사내 ID (계정)</label><input type="text" id="sysEmpId" placeholder="예: hong123"></div>
-                            <div class="form-control"><label>직급 (조장, 차장, 과장 명시 시 권한 자동부여)</label><input type="text" id="sysEmpPosition" placeholder="예: 주임, 대리, 조장"></div>
-                            <div class="form-control"><label>증명 사진 등록</label><input type="file" id="sysEmpPhoto" accept="image/*"></div>
+                            <div class="form-control"><label>사내 ID</label><input type="text" id="sysEmpId" placeholder="로그인 계정명"></div>
+                            <div class="form-control"><label>직급 (조장/차장/과장)</label><input type="text" id="sysEmpPosition" placeholder="예: 조립조장"></div>
+                            <div class="form-control"><label>사진</label><input type="file" id="sysEmpPhoto" accept="image/*"></div>
                         </div>
-                        <button type="submit" class="btn" style="background:#1e3a8a; margin-top:20px;">사내 직원 명부 등록</button>
+                        <button type="submit" class="btn">등록 완료</button>
                     </form>
                 </div>
-                <div class="card">
-                    <div class="card-title">전사 직원 명부 관리</div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>부서</th><th>형태</th><th>성명</th><th>연락처</th><th>ID/직급</th><th>관리</th></tr>
-                            </thead>
-                            <tbody id="sysEmpTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="card"><div class="card-title">직원 명부 관리</div><div class="table-wrapper"><table><thead><tr><th>부서</th><th>형태</th><th>성명</th><th>연락처</th><th>ID/직급</th><th>관리</th></tr></thead><tbody id="sysEmpTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 📦 시스템관리 - 품목 마스터 등록 -->
         <div id="section-sys-item" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">신규 품목 마스터 등록 (전사 동기화)</div>
+                    <div class="card-title">신규 품목 등록</div>
                     <form id="sysItemForm">
-                        <div class="form-control">
-                            <label>품목 분류</label>
-                            <select id="sysItemType" required>
-                                <option value="원재료">원재료</option><option value="자재">자재</option>
-                                <option value="부자재">부자재</option><option value="완제품">완제품</option>
-                                <option value="비품">비품</option>
-                            </select>
-                        </div>
-                        <div class="form-control"><label>품번 (Item Code)</label><input type="text" id="sysItemCode" required></div>
-                        <div class="form-control"><label>품명 (Item Name)</label><input type="text" id="sysItemName" required></div>
-                        
-                        <div class="form-control">
-                            <label>주요 거래처 검색</label>
-                            <input type="text" id="sysItemVendor" list="vendorDatalist" required autocomplete="off">
-                            <datalist id="vendorDatalist"></datalist>
-                        </div>
-                        
-                        <div class="form-control">
-                            <label>단가 적용 구분</label>
-                            <select id="sysItemPriceType" onchange="toggleSysPriceInput()">
-                                <option value="유상">유상 (직접 입력)</option>
-                                <option value="무상사급">무상사급 (0원 처리)</option>
-                            </select>
-                        </div>
-                        <div class="form-control"><label>계약 단가 (원)</label><input type="number" id="sysItemPrice" value="0" min="0"></div>
-                        <button type="submit" class="btn">마스터 DB에 품목 등록</button>
+                        <div class="form-control"><label>품목 분류</label><select id="sysItemType"><option value="원재료">원재료</option><option value="자재">자재</option><option value="부자재">부자재</option><option value="완제품">완제품</option><option value="비품">비품</option></select></div>
+                        <div class="form-control"><label>품번</label><input type="text" id="sysItemCode" required></div>
+                        <div class="form-control"><label>품명</label><input type="text" id="sysItemName" required></div>
+                        <div class="form-control"><label>거래처</label><input type="text" id="sysItemVendor" list="vendorDatalist" required autocomplete="off"><datalist id="vendorDatalist"></datalist></div>
+                        <div class="form-control"><label>단가 구분</label><select id="sysItemPriceType" onchange="toggleSysPriceInput()"><option value="유상">유상</option><option value="무상사급">무상사급</option></select></div>
+                        <div class="form-control"><label>단가</label><input type="number" id="sysItemPrice" value="0"></div>
+                        <button type="submit" class="btn">등록</button>
                     </form>
                 </div>
-                <div class="card">
-                    <div class="card-title">통합 등록된 전체 품목 마스터 장부</div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>분류</th><th>품번</th><th>품명</th><th>거래처</th><th class="text-right">계약단가</th></tr></thead>
-                            <tbody id="sysItemTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="card"><div class="card-title">전체 품목 장부</div><div class="table-wrapper"><table><thead><tr><th>분류</th><th>품번</th><th>품명</th><th>거래처</th><th class="text-right">단가</th></tr></thead><tbody id="sysItemTableBody"></tbody></table></div></div>
             </div>
-            
-            <div class="card full-width" style="margin-top:25px; border:1px solid #ef4444; background:#fef2f2;">
-                <div class="card-title" style="color:#ef4444; border-left-color:#ef4444;">⚠️ 데이터베이스 완전 초기화 구역</div>
-                <p style="font-size:13px; color:#475569;">테스트 내역을 모두 지우고 완전히 텅 빈 상태에서 시스템을 새로 시작하려면 아래 버튼을 누르세요. (모든 데이터 영구 삭제)</p>
-                <button class="btn" style="background:#ef4444; width:auto; padding:10px 20px;" onclick="resetWholeDatabase()">전사 데이터 완전 초기화</button>
+            <div class="card full-width" style="margin-top:25px; border:1px solid #cbd5e1; background:#f8fafc;">
+                <div class="card-title">💾 장부 시스템 백업 / 복원 / 데이터 안심 구역</div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="btn" style="width:auto; padding:10px 20px; background:#1e3a8a;" onclick="downloadBackup()">⬇️ 백업 파일 다운로드</button>
+                    <input type="file" id="backupFileInput" accept=".json">
+                    <button class="btn" style="width:auto; padding:10px 20px; background:#059669; margin:0;" onclick="uploadBackup()">⬆️ 백업 파일로 복원하기</button>
+                </div>
+                <div style="border-top:1px dashed #cbd5e1; margin-top:20px; padding-top:20px;">
+                    <button class="btn" style="background:#ef4444; width:auto; padding:8px 15px; margin:0;" onclick="resetWholeDatabase()">전사 데이터 완전 초기화</button>
+                </div>
             </div>
         </div>
 
-        <!-- 🚚 시스템관리 - 차량 마스터 등록 -->
         <div id="section-sys-car" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">신규 차량(마스터) 등록</div>
+                    <div class="card-title">차량 마스터 등록</div>
                     <form id="sysCarForm">
-                        <div class="form-control"><label>차종 (예: 탑차, 윙바디, 포터)</label><input type="text" id="sysCarType" required></div>
-                        <div class="form-control"><label>톤수 (예: 1톤, 2.5톤, 5톤)</label><input type="text" id="sysCarTon" required></div>
-                        <div class="form-control"><label>차량 번호 (예: 12가 3456)</label><input type="text" id="sysCarNo" required></div>
-                        <div class="form-control"><label>차량 제조일자</label><input type="date" id="sysCarMakeDate" required></div>
-                        <div class="form-control"><label>차량 구입일자</label><input type="date" id="sysCarBuyDate" required></div>
-                        <button type="submit" class="btn">차량 마스터 등록</button>
+                        <div class="form-control"><label>차종</label><input type="text" id="sysCarType" required></div>
+                        <div class="form-control"><label>톤수</label><input type="text" id="sysCarTon" required></div>
+                        <div class="form-control"><label>차량 번호</label><input type="text" id="sysCarNo" required></div>
+                        <div class="form-control"><label>제조일자</label><input type="date" id="sysCarMakeDate" required></div>
+                        <div class="form-control"><label>구입일자</label><input type="date" id="sysCarBuyDate" required></div>
+                        <button type="submit" class="btn">등록</button>
                     </form>
                 </div>
-                <div class="card">
-                    <div class="card-title">사내 배송/설비 차량 보유 장부</div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>차량번호</th><th>차종</th><th>톤수</th><th>제조일자</th><th>구입일자</th></tr></thead>
-                            <tbody id="sysCarTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="card"><div class="card-title">차량 보유 장부</div><div class="table-wrapper"><table><thead><tr><th>차량번호</th><th>차종</th><th>톤수</th><th>제조일자</th><th>구입일자</th></tr></thead><tbody id="sysCarTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 🛑 시스템관리 - 설비정지 CODE 마스터 등록 -->
         <div id="section-sys-code" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
                     <div class="card-title">설비정지/유실 CODE 등록</div>
                     <form onsubmit="submitStopCode(event)">
-                        <div class="form-control"><label>분류 CODE (예: 101, 201)</label><input type="text" id="stopCodeId" required></div>
-                        <div class="form-control"><label>유형 명칭 (예: 전기이상, 부자재결품)</label><input type="text" id="stopCodeName" required></div>
-                        <button type="submit" class="btn" style="background:#ea580c;">CODE 마스터 등록</button>
+                        <div class="form-control"><label>분류 CODE</label><input type="text" id="stopCodeId" required></div>
+                        <div class="form-control"><label>유형 명칭</label><input type="text" id="stopCodeName" required></div>
+                        <button type="submit" class="btn" style="background:#ea580c;">등록</button>
                     </form>
                 </div>
-                <div class="card">
-                    <div class="card-title">등록된 설비정지 CODE 목록</div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>CODE</th><th>유형 명칭</th><th>관리</th></tr></thead>
-                            <tbody id="stopCodeTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="card"><div class="card-title">설비정지 CODE 목록</div><div class="table-wrapper"><table><thead><tr><th>CODE</th><th>유형 명칭</th><th>관리</th></tr></thead><tbody id="stopCodeTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 자재 메뉴 -->
-        <div id="section-mat-view" class="erp-section">
-            <div class="card full-width">
-                <div class="nav-item" id="matViewTitle" style="border:none; background:none; font-size:16px; font-weight:bold; color:#1e3a8a; pointer-events:none; padding-left:0;">자재 목록 원장</div>
-                <div class="table-wrapper">
-                    <table><thead><tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">계약단가</th></tr></thead><tbody id="matViewTableBody"></tbody></table>
-                </div>
-            </div>
-        </div>
-
-        <div id="section-mat-stock" class="erp-section">
-            <div class="card full-width">
-                <div class="card-title">실시간 품목별 창고 현재고 실적표</div>
-                <div class="table-wrapper">
-                    <table><thead><tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">생산/입고량</th><th class="text-right">출하 차감량</th><th class="text-right">현재고</th></tr></thead><tbody id="inventoryTableBody"></tbody></table>
-                </div>
-            </div>
-        </div>
-
+        <div id="section-mat-view" class="erp-section"><div class="card full-width"><div id="matViewTitle" class="card-title">자재 목록 원장</div><div class="table-wrapper"><table><thead><tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">계약단가</th></tr></thead><tbody id="matViewTableBody"></tbody></table></div></div></div>
+        <div id="section-mat-stock" class="erp-section"><div class="card full-width"><div class="card-title">실시간 창고 현재고 실적표</div><div class="table-wrapper"><table><thead><tr><th>품번</th><th>품명</th><th>분류</th><th class="text-right">생산량/입고량</th><th class="text-right">출하량</th><th class="text-right">현재고</th></tr></thead><tbody id="inventoryTableBody"></tbody></table></div></div></div>
         <div id="section-mat-buy" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">자재 / 부자재 / 원재료 입고 등록</div>
+                    <div class="card-title">자재 입고 등록</div>
                     <form id="buyForm">
-                        <div class="form-control">
-                            <label>자재 구분</label>
-                            <select id="buyClass" onchange="filterBuyItemSelect()" required>
-                                <option value="원재료">원재료</option><option value="자재">자재</option><option value="부자재">부자재</option>
-                            </select>
-                        </div>
-                        <div class="form-control">
-                            <label>품번/품목 검색</label>
-                            <input type="text" id="buyItemInput" list="buyItemDatalist" onchange="syncBuyDetails()" placeholder="검색어 입력" required autocomplete="off">
-                            <datalist id="buyItemDatalist"></datalist>
-                        </div>
+                        <div class="form-control"><label>자재 구분</label><select id="buyClass" onchange="filterBuyItemSelect()"><option value="원재료">원재료</option><option value="자재">자재</option><option value="부자재">부자재</option></select></div>
+                        <div class="form-control"><label>품번/품목 검색</label><input type="text" id="buyItemInput" list="buyItemDatalist" onchange="syncBuyDetails()" required autocomplete="off"><datalist id="buyItemDatalist"></datalist></div>
                         <div class="form-control"><label>공급사</label><input type="text" id="buyCompany" readonly></div>
                         <div class="form-control"><label>단가</label><input type="text" id="buyPrice" readonly></div>
                         <div class="form-control"><label>입고 수량</label><input type="number" id="buyQty" required></div>
@@ -486,51 +306,54 @@
             </div>
         </div>
 
-        <!-- 🛒 비품구매 -->
         <div id="section-equip-reg" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
                     <div class="card-title">공장 및 부서별 비품 매입 등록</div>
                     <form id="equipForm">
-                        <div style="display:flex; gap:10px;">
-                            <div class="form-control" style="flex:1;"><label>매입 공장</label><select id="eqFactory" required><option value="1공장">1공장</option><option value="2공장">2공장</option><option value="3공장">3공장</option><option value="4공장">4공장</option><option value="5공장" selected>5공장</option></select></div>
-                            <div class="form-control" style="flex:1;"><label>사용 부서</label><select id="eqDept" required><option value="포장">포장</option><option value="GSC">GSC</option><option value="사출">사출</option><option value="관리">관리</option><option value="품질">품질</option></select></div>
-                        </div>
-                        <div class="form-control">
-                            <label>비품 품목 검색</label>
-                            <input type="text" id="eqItemInput" list="eqItemDatalist" onchange="syncEquipDetails()" placeholder="비품명 검색" required autocomplete="off">
-                            <datalist id="eqItemDatalist"></datalist>
-                        </div>
+                        <div style="display:flex; gap:10px;"><div class="form-control" style="flex:1;"><label>매입 공장</label><select id="eqFactory"><option value="1공장">1공장</option><option value="2공장">2공장</option><option value="3공장">3공장</option><option value="4공장">4공장</option><option value="5공장" selected>5공장</option></select></div><div class="form-control" style="flex:1;"><label>사용 부서</label><select id="eqDept"><option value="포장">포장</option><option value="GSC">GSC</option><option value="사출">사출</option><option value="관리">관리</option><option value="품질">품질</option></select></div></div>
+                        <div class="form-control"><label>비품 품목 검색</label><input type="text" id="eqItemInput" list="eqItemDatalist" onchange="syncEquipDetails()" required autocomplete="off"><datalist id="eqItemDatalist"></datalist></div>
                         <div class="form-control"><label>구입처</label><input type="text" id="eqVendor" readonly></div>
                         <div style="display:flex; gap:10px;"><div class="form-control" style="flex:1;"><label>단가</label><input type="number" id="eqPrice" readonly></div><div class="form-control" style="flex:1;"><label>수량</label><input type="number" id="eqQty" value="1" required></div></div>
                         <div class="form-control"><label>구입 일자</label><input type="date" id="eqDate" required></div>
-                        <button type="submit" class="btn">비품 매입 전표 등록</button>
+                        <button type="submit" class="btn">등록</button>
                     </form>
                 </div>
                 <div class="card"><div class="card-title">최근 비품 구매 내역</div><div class="table-wrapper"><table><thead><tr><th>일자</th><th>공장-부서</th><th>품목명</th><th class="text-right">총액</th></tr></thead><tbody id="equipRecentTableBody"></tbody></table></div></div>
             </div>
         </div>
-
         <div id="section-equip-list" class="erp-section">
             <div class="card full-width">
                 <div class="card-title">부서별 비품 매입 현황판</div>
                 <div class="filter-box">
-                    <div><label style="font-size:12px; font-weight:bold; color:#475569;">공장 필터</label><select id="eqFilterFac" onchange="renderEquipList()" style="width:120px;"><option value="전체">전체 공장</option><option value="1공장">1공장</option><option value="2공장">2공장</option><option value="3공장">3공장</option><option value="4공장">4공장</option><option value="5공장">5공장</option></select></div>
-                    <div><label style="font-size:12px; font-weight:bold; color:#475569;">부서 필터</label><select id="eqFilterDept" onchange="renderEquipList()" style="width:120px;"><option value="전체">전체 부서</option><option value="포장">포장</option><option value="GSC">GSC</option><option value="사출">사출</option><option value="관리">관리</option><option value="품질">품질</option></select></div>
-                    <div style="flex:1; text-align:right;"><span style="font-size:14px; font-weight:bold; color:#64748b;">조건 매입 총액: </span><span id="equipTotalSum" style="font-size:20px; font-weight:bold; color:#dc2626;">0 원</span></div>
+                    <select id="eqFilterFac" onchange="renderEquipList()"><option value="전체">전체 공장</option><option value="1공장">1공장</option><option value="2공장">2공장</option><option value="3공장">3공장</option><option value="4공장">4공장</option><option value="5공장">5공장</option></select>
+                    <select id="eqFilterDept" onchange="renderEquipList()"><option value="전체">전체 부서</option><option value="포장">포장</option><option value="GSC">GSC</option><option value="사출">사출</option><option value="관리">관리</option><option value="품질">품질</option></select>
+                    <div style="flex:1; text-align:right;"><span style="font-size:14px; font-weight:bold;">조건 매입 총액: </span><span id="equipTotalSum" style="font-size:20px; font-weight:bold; color:#dc2626;">0 원</span></div>
                 </div>
-                <div class="table-wrapper"><table><thead><tr><th>구입일자</th><th>공장구분</th><th>사용부서</th><th>품목명</th><th>구입처</th><th class="text-right">단가</th><th class="text-right">수량</th><th class="text-right">매입 총금액</th></tr></thead><tbody id="equipListTableBody"></tbody></table></div>
+                <div class="table-wrapper"><table><thead><tr><th>구입일자</th><th>공장구분</th><th>사용부서</th><th>품목명</th><th>구입처</th><th class="text-right">단가</th><th class="text-right">수량</th><th class="text-right">총금액</th></tr></thead><tbody id="equipListTableBody"></tbody></table></div>
             </div>
         </div>
 
-        <!-- 📦 생산 메뉴 -->
+        <div id="section-prod-dash" class="erp-section">
+            <div class="calendar-box">
+                <div class="calendar-header-bar"><div class="calendar-title">사출 생산 종합 현황판</div><div class="calendar-selectors"><select id="prodMonthSelect" onchange="renderProdDash()"><option value="5">5월</option><option value="6" selected>6월</option></select></div></div>
+                <div class="calendar-grid" id="prodCalendarGrid"></div>
+                <div class="stats-grid">
+                    <div class="stat-card"><h3>월 기준 가동시간</h3><p class="value" id="prodStatTotalTime">0 시간</p></div>
+                    <div class="stat-card"><h3>월 누적 유실시간</h3><p class="value" id="prodStatLossTime" style="color:#dc2626;">0 시간</p></div>
+                    <div class="stat-card"><h3>월 평균 가동률</h3><p class="value" id="prodStatOpRate" style="color:#16a34a;">0 %</p></div>
+                    <div class="stat-card"><h3>월 평균 로스율</h3><p class="value" id="prodStatLossRate" style="color:#dc2626;">0 %</p></div>
+                </div>
+            </div>
+        </div>
+
         <div id="section-plan" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
                     <div class="card-title">생산계획 수립</div>
                     <form id="planForm">
-                        <div class="form-control"><label>작업 사출기</label><select id="planMachine" required><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
-                        <div class="form-control"><label>대상 품번 (검색 가능)</label><input type="text" id="planItemInput" list="planItemDatalist" required autocomplete="off"><datalist id="planItemDatalist"></datalist></div>
+                        <div class="form-control"><label>작업 사출기</label><select id="planMachine"><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
+                        <div class="form-control"><label>대상 품번</label><input type="text" id="planItemInput" list="planItemDatalist" required autocomplete="off"><datalist id="planItemDatalist"></datalist></div>
                         <div class="form-control"><label>계획 수량</label><input type="number" id="planQty" required></div>
                         <div class="form-control"><label>계획 일자</label><input type="date" id="planDate" required></div>
                         <button type="submit" class="btn">계획 반영</button>
@@ -545,11 +368,11 @@
                 <div class="card">
                     <div class="card-title">현장 생산지시서 발행</div>
                     <form id="directForm">
-                        <div class="form-control"><label>지시 사출기</label><select id="directMachine" required><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
+                        <div class="form-control"><label>지시 사출기</label><select id="directMachine"><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
                         <div class="form-control"><label>지시 품번</label><input type="text" id="directItemInput" list="directItemDatalist" required autocomplete="off"><datalist id="directItemDatalist"></datalist></div>
                         <div class="form-control"><label>지시 수량</label><input type="number" id="directQty" required></div>
                         <div class="form-control"><label>지시 일자</label><input type="date" id="directDate" required></div>
-                        <button type="submit" class="btn" style="background:#d97706;">생산지시 투입</button>
+                        <button type="submit" class="btn">생산지시 투입</button>
                     </form>
                 </div>
                 <div class="card"><div class="card-title">생산 지시 원장</div><div class="table-wrapper"><table><thead><tr><th>지시일자</th><th>설비구분</th><th>품번</th><th class="text-right">지시수량</th></tr></thead><tbody id="directTableBody"></tbody></table></div></div>
@@ -561,41 +384,32 @@
                 <div class="card">
                     <div class="card-title">당일 생산실적 마감</div>
                     <form id="reportForm">
-                        <div class="form-control"><label>생산 사출기</label><select id="reportMachine" required><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
+                        <div class="form-control"><label>생산 사출기</label><select id="reportMachine"><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
                         <div class="form-control"><label>생산 품번</label><input type="text" id="reportItemInput" list="reportItemDatalist" required autocomplete="off"><datalist id="reportItemDatalist"></datalist></div>
-                        <div class="form-control"><label>완료 총생산량 (양품+불량)</label><input type="number" id="reportQty" required></div>
+                        <div class="form-control"><label>완료 총생산량</label><input type="number" id="reportQty" required></div>
                         <div class="form-control"><label>이 중 불량 수량</label><input type="number" id="reportBadQty" value="0" required></div>
                         <div class="form-control"><label>생산 일자</label><input type="date" id="reportDate" required></div>
-                        <button type="submit" class="btn" style="background:#16a34a;">생산일보 기록</button>
+                        <button type="submit" class="btn">생산일보 기록</button>
                     </form>
                 </div>
-                <div class="card"><div class="card-title">부족/불량 실시간 분석판</div><div class="table-wrapper"><table><thead><tr><th>생산일자</th><th>설비</th><th>품번</th><th class="text-right">양품량</th><th class="text-right">불량량</th><th class="text-right">발주과부족</th></tr></thead><tbody id="reportTableBody"></tbody></table></div></div>
+                <div class="card"><div class="card-title">부족/불량 실시간 분석판</div><div class="table-wrapper"><table><thead><tr><th>생산일자</th><th>설비</th><th>품번</th><th class="text-right">양품량</th><th class="text-right">불량량</th></tr></thead><tbody id="reportTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 🛑 생산 - 설비정지(유실) 등록 (NEW) -->
         <div id="section-prod-loss" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
                     <div class="card-title">사출 설비 유실(정지) 등록</div>
                     <form onsubmit="submitProdLoss(event)">
-                        <div class="form-control"><label>해당 설비</label><select id="prodLossMachine" required><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
-                        <div class="form-control"><label>유형 CODE (마스터 연동)</label><select id="prodLossCode" required></select></div>
-                        <div style="display:flex; gap:10px;">
-                            <div class="form-control" style="flex:1;"><label>정지 시간</label><input type="time" id="prodLossStart" required></div>
-                            <div class="form-control" style="flex:1;"><label>재가동 시간</label><input type="time" id="prodLossEnd" required></div>
-                        </div>
+                        <div class="form-control"><label>해당 설비</label><select id="prodLossMachine"><option value="사출기 1호">사출기 1호</option><option value="사출기 2호">사출기 2호</option></select></div>
+                        <div class="form-control"><label>유형 CODE</label><select id="prodLossCode" class="commonStopCodeSelect"></select></div>
+                        <div style="display:flex; gap:10px;"><div class="form-control" style="flex:1;"><label>정지 시간</label><input type="time" id="prodLossStart" required></div><div class="form-control" style="flex:1;"><label>재가동 시간</label><input type="time" id="prodLossEnd" required></div></div>
                         <div class="form-control"><label>상세 사유</label><input type="text" id="prodLossReason" required></div>
                         <div class="form-control"><label>발생 일자</label><input type="date" id="prodLossDate" required></div>
                         <button type="submit" class="btn" style="background:#ef4444;">설비정지 기록</button>
                     </form>
                 </div>
-                <div class="card">
-                    <div class="card-title">사출 설비 유실 이력 원장</div>
-                    <div class="table-wrapper">
-                        <table><thead><tr><th>발생일자</th><th>설비명</th><th>유형CODE</th><th>정지~재가동</th><th>사유</th></tr></thead><tbody id="prodLossTableBody"></tbody></table>
-                    </div>
-                </div>
+                <div class="card"><div class="card-title">사출 설비 유실 이력 원장</div><div class="table-wrapper"><table><thead><tr><th>발생일자</th><th>설비명</th><th>유형CODE</th><th>정지~재가동</th><th>사유</th></tr></thead><tbody id="prodLossTableBody"></tbody></table></div></div>
             </div>
         </div>
 
@@ -604,45 +418,43 @@
                 <div class="card">
                     <div class="card-title">금형 이력 등록</div>
                     <form id="moldForm">
-                        <div class="form-control"><label>금형코드 / 명칭</label><input type="text" id="moldId" required></div>
+                        <div class="form-control"><label>금형코드</label><input type="text" id="moldId" required></div>
                         <div class="form-control"><label>최초 입고날</label><input type="date" id="moldInDate" required></div>
                         <div class="form-control"><label>수리 내역</label><input type="text" id="moldRepair"></div>
                         <div class="form-control"><label>세척 내역</label><input type="text" id="moldWash"></div>
-                        <div class="form-control"><label>작업 및 기록 일자</label><input type="date" id="moldLogDate" required></div>
-                        <button type="submit" class="btn" style="background:#475569;">금형 관리 대장 반영</button>
+                        <div class="form-control"><label>작업 일자</label><input type="date" id="moldLogDate" required></div>
+                        <button type="submit" class="btn">반영</button>
                     </form>
                 </div>
                 <div class="card"><div class="card-title">금형 이력 전산 장부</div><div class="table-wrapper"><table><thead><tr><th>기록일자</th><th>금형코드</th><th>최초입고일</th><th>수리이력</th><th>세척이력</th></tr></thead><tbody id="moldTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 🔧 조립 HVAC -->
-        <div id="section-assem-hvac-dash" class="erp-section">
+        <div id="section-assem-ka4-dash" class="erp-section">
             <div class="calendar-box">
-                <div class="calendar-header-bar"><div class="calendar-title">조립 라인 현황판 (HVAC)</div><div class="calendar-selectors"><select id="hvacMonthSelect" onchange="renderAssemDash('HVAC')"><option value="5">5월</option><option value="6" selected>6월</option></select></div></div>
-                <div class="calendar-grid" id="hvacCalendarGrid"></div>
+                <div class="calendar-header-bar"><div class="calendar-title">조립 라인 현황판 (KA4)</div><div class="calendar-selectors"><select id="ka4MonthSelect" onchange="renderAssemDash('KA4')"><option value="5">5월</option><option value="6" selected>6월</option></select></div></div>
+                <div class="calendar-grid" id="ka4CalendarGrid"></div>
                 <div class="stats-grid">
-                    <div class="stat-card"><h3>월 기준 가동시간</h3><p class="value" id="hvacStatTotalTime">0 시간</p></div>
-                    <div class="stat-card"><h3>월 누적 유실시간</h3><p class="value" id="hvacStatLossTime" style="color:#dc2626;">0 시간</p></div>
-                    <div class="stat-card"><h3>월 평균 가동률</h3><p class="value" id="hvacStatOpRate" style="color:#16a34a;">0 %</p></div>
-                    <div class="stat-card"><h3>월 평균 로스율</h3><p class="value" id="hvacStatLossRate" style="color:#dc2626;">0 %</p></div>
+                    <div class="stat-card"><h3>월 기준 가동시간</h3><p class="value" id="ka4StatTotalTime">0 시간</p></div>
+                    <div class="stat-card"><h3>월 누적 유실시간</h3><p class="value" id="ka4StatLossTime" style="color:#dc2626;">0 시간</p></div>
+                    <div class="stat-card"><h3>월 평균 가동률</h3><p class="value" id="ka4StatOpRate" style="color:#16a34a;">0 %</p></div>
+                    <div class="stat-card"><h3>월 평균 로스율</h3><p class="value" id="ka4StatLossRate" style="color:#dc2626;">0 %</p></div>
                 </div>
             </div>
         </div>
-        <div id="section-assem-hvac-prod" class="erp-section">
+        <div id="section-assem-ka4-prod" class="erp-section">
             <div class="dashboard-grid">
-                <div class="card"><div class="card-title">HVAC 생산 실적 등록</div><form onsubmit="submitAssemProd(event, 'HVAC')"><div class="form-control"><label>생산품 검색</label><input type="text" id="hvacProdInput" list="hvacProdDatalist" required autocomplete="off"><datalist id="hvacProdDatalist"></datalist></div><div class="form-control"><label>생산 수량</label><input type="number" id="hvacProdQty" required></div><div class="form-control"><label>작업 일자</label><input type="date" id="hvacProdDate" required></div><button type="submit" class="btn">저장</button></form></div>
-                <div class="card"><div class="card-title">HVAC 생산 실적 장부</div><div class="table-wrapper"><table><thead><tr><th>작업일자</th><th>생산품</th><th class="text-right">수량</th></tr></thead><tbody id="hvacProdTableBody"></tbody></table></div></div>
+                <div class="card"><div class="card-title">KA4 생산 실적 등록</div><form onsubmit="submitAssemProd(event, 'KA4')"><div class="form-control"><label>생산품 검색</label><input type="text" id="ka4ProdInput" list="ka4ProdDatalist" required autocomplete="off"><datalist id="ka4ProdDatalist"></datalist></div><div class="form-control"><label>생산 수량</label><input type="number" id="ka4ProdQty" required></div><div class="form-control"><label>작업 일자</label><input type="date" id="ka4ProdDate" required></div><button type="submit" class="btn">저장</button></form></div>
+                <div class="card"><div class="card-title">KA4 생산 실적 장부</div><div class="table-wrapper"><table><thead><tr><th>작업일자</th><th>생산품</th><th class="text-right">수량</th></tr></thead><tbody id="ka4ProdTableBody"></tbody></table></div></div>
             </div>
         </div>
-        <div id="section-assem-hvac-loss" class="erp-section">
+        <div id="section-assem-ka4-loss" class="erp-section">
             <div class="dashboard-grid">
-                <div class="card"><div class="card-title">HVAC 라인 설비 유실(로스) 등록</div><form onsubmit="submitAssemLoss(event, 'HVAC')"><div class="form-control"><label>유형 CODE</label><select id="hvacLossCode" class="commonStopCodeSelect" required></select></div><div style="display:flex; gap:10px;"><div class="form-control" style="flex:1;"><label>정지시간</label><input type="time" id="hvacLossStart" required></div><div class="form-control" style="flex:1;"><label>재가동</label><input type="time" id="hvacLossEnd" required></div></div><div class="form-control"><label>상세 사유</label><input type="text" id="hvacLossReason" required></div><div class="form-control"><label>일자</label><input type="date" id="hvacLossDate" required></div><button type="submit" class="btn" style="background:#ef4444;">유실 등록</button></form></div>
-                <div class="card"><div class="card-title">HVAC 유실 이력</div><div class="table-wrapper"><table><thead><tr><th>발생일자</th><th>유형CODE</th><th>정지~재가동</th><th>사유</th></tr></thead><tbody id="hvacLossTableBody"></tbody></table></div></div>
+                <div class="card"><div class="card-title">KA4 라인 설비 유실 등록</div><form onsubmit="submitAssemLoss(event, 'KA4')"><div class="form-control"><label>유형 CODE</label><select id="ka4LossCode" class="commonStopCodeSelect" required></select></div><div style="display:flex; gap:10px;"><div class="form-control" style="flex:1;"><label>정지시간</label><input type="time" id="ka4LossStart" required></div><div class="form-control" style="flex:1;"><label>재가동</label><input type="time" id="ka4LossEnd" required></div></div><div class="form-control"><label>상세 사유</label><input type="text" id="ka4LossReason" required></div><div class="form-control"><label>일자</label><input type="date" id="ka4LossDate" required></div><button type="submit" class="btn" style="background:#ef4444;">유실 등록</button></form></div>
+                <div class="card"><div class="card-title">KA4 유실 이력</div><div class="table-wrapper"><table><thead><tr><th>발생일자</th><th>유형CODE</th><th>정지~재가동</th><th>사유</th></tr></thead><tbody id="ka4LossTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 🔧 조립 YB PE -->
         <div id="section-assem-ybpe-dash" class="erp-section">
             <div class="calendar-box">
                 <div class="calendar-header-bar"><div class="calendar-title">조립 라인 현황판 (YB PE)</div><div class="calendar-selectors"><select id="ybpeMonthSelect" onchange="renderAssemDash('YB PE')"><option value="5">5월</option><option value="6" selected>6월</option></select></div></div>
@@ -668,73 +480,32 @@
             </div>
         </div>
 
-        <!-- 🏭 GSC 메뉴 -->
         <div id="section-gsc-work" class="erp-section">
             <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-title">GSC 작업일보 등록</div>
-                    <form onsubmit="submitBasicLog(event, 'gscWork')">
-                        <div class="form-control"><label>날짜</label><input type="date" id="gscWorkDate" required></div>
-                        <div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="gscWorkItem" list="masterItemDatalist" required autocomplete="off"></div>
-                        <div class="form-control"><label>수량</label><input type="number" id="gscWorkQty" required></div>
-                        <div class="form-control"><label>로트(LOT)</label><input type="text" id="gscWorkLot" required></div>
-                        <button type="submit" class="btn">GSC 작업 등록</button>
-                    </form>
-                </div>
+                <div class="card"><div class="card-title">GSC 작업일보 등록</div><form onsubmit="submitBasicLog(event, 'gscWork')"><div class="form-control"><label>날짜</label><input type="date" id="gscWorkDate" required></div><div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="gscWorkItem" list="masterItemDatalist" required autocomplete="off"></div><div class="form-control"><label>수량</label><input type="number" id="gscWorkQty" required></div><div class="form-control"><label>로트(LOT)</label><input type="text" id="gscWorkLot" required></div><button type="submit" class="btn">GSC 작업 등록</button></form></div>
                 <div class="card"><div class="card-title">GSC 작업 내역</div><div class="table-wrapper"><table><thead><tr><th>날짜</th><th>품목</th><th class="text-right">수량</th><th>LOT</th></tr></thead><tbody id="gscWorkTableBody"></tbody></table></div></div>
             </div>
         </div>
         <div id="section-gsc-ship" class="erp-section">
             <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-title">GSC 출하일보 등록</div>
-                    <form onsubmit="submitBasicLog(event, 'gscShip')">
-                        <div class="form-control"><label>날짜</label><input type="date" id="gscShipDate" required></div>
-                        <div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="gscShipItem" list="masterItemDatalist" required autocomplete="off"></div>
-                        <div class="form-control"><label>수량</label><input type="number" id="gscShipQty" required></div>
-                        <div class="form-control"><label>로트(LOT)</label><input type="text" id="gscShipLot" required></div>
-                        <button type="submit" class="btn" style="background:#16a34a;">GSC 출하 등록</button>
-                    </form>
-                </div>
+                <div class="card"><div class="card-title">GSC 출하일보 등록</div><form onsubmit="submitBasicLog(event, 'gscShip')"><div class="form-control"><label>날짜</label><input type="date" id="gscShipDate" required></div><div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="gscShipItem" list="masterItemDatalist" required autocomplete="off"></div><div class="form-control"><label>수량</label><input type="number" id="gscShipQty" required></div><div class="form-control"><label>로트(LOT)</label><input type="text" id="gscShipLot" required></div><button type="submit" class="btn" style="background:#16a34a;">GSC 출하 등록</button></form></div>
                 <div class="card"><div class="card-title">GSC 출하 내역</div><div class="table-wrapper"><table><thead><tr><th>날짜</th><th>품목</th><th class="text-right">수량</th><th>LOT</th></tr></thead><tbody id="gscShipTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 📦 포장 메뉴 -->
         <div id="section-pack-work" class="erp-section">
             <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-title">포장 작업일보 등록</div>
-                    <form onsubmit="submitBasicLog(event, 'packWork')">
-                        <div class="form-control"><label>날짜</label><input type="date" id="packWorkDate" required></div>
-                        <div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="packWorkItem" list="masterItemDatalist" required autocomplete="off"></div>
-                        <div class="form-control"><label>포장 수량</label><input type="number" id="packWorkQty" required></div>
-                        <div class="form-control"><label>로트(LOT)</label><input type="text" id="packWorkLot" required></div>
-                        <button type="submit" class="btn">포장 작업 등록</button>
-                    </form>
-                </div>
+                <div class="card"><div class="card-title">포장 작업일보 등록</div><form onsubmit="submitBasicLog(event, 'packWork')"><div class="form-control"><label>날짜</label><input type="date" id="packWorkDate" required></div><div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="packWorkItem" list="masterItemDatalist" required autocomplete="off"></div><div class="form-control"><label>포장 수량</label><input type="number" id="packWorkQty" required></div><div class="form-control"><label>로트(LOT)</label><input type="text" id="packWorkLot" required></div><button type="submit" class="btn">포장 작업 등록</button></form></div>
                 <div class="card"><div class="card-title">포장 작업 내역</div><div class="table-wrapper"><table><thead><tr><th>날짜</th><th>품목</th><th class="text-right">수량</th><th>LOT</th></tr></thead><tbody id="packWorkTableBody"></tbody></table></div></div>
             </div>
         </div>
         <div id="section-pack-ship" class="erp-section">
             <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-title">포장 출하일보 등록</div>
-                    <form onsubmit="submitBasicLog(event, 'packShip')">
-                        <div class="form-control"><label>날짜</label><input type="date" id="packShipDate" required></div>
-                        <div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="packShipItem" list="masterItemDatalist" required autocomplete="off"></div>
-                        <div class="form-control"><label>출하 수량</label><input type="number" id="packShipQty" required></div>
-                        <div class="form-control"><label>로트(LOT)</label><input type="text" id="packShipLot" required></div>
-                        <button type="submit" class="btn" style="background:#16a34a;">포장 출하 등록</button>
-                    </form>
-                </div>
+                <div class="card"><div class="card-title">포장 출하일보 등록</div><form onsubmit="submitBasicLog(event, 'packShip')"><div class="form-control"><label>날짜</label><input type="date" id="packShipDate" required></div><div class="form-control"><label>품번/품명 (검색)</label><input type="text" id="packShipItem" list="masterItemDatalist" required autocomplete="off"></div><div class="form-control"><label>출하 수량</label><input type="number" id="packShipQty" required></div><div class="form-control"><label>로트(LOT)</label><input type="text" id="packShipLot" required></div><button type="submit" class="btn" style="background:#16a34a;">포장 출하 등록</button></form></div>
                 <div class="card"><div class="card-title">포장 출하 내역</div><div class="table-wrapper"><table><thead><tr><th>날짜</th><th>품목</th><th class="text-right">수량</th><th>LOT</th></tr></thead><tbody id="packShipTableBody"></tbody></table></div></div>
             </div>
         </div>
-        
-        <datalist id="masterItemDatalist"></datalist> 
 
-        <!-- 🚚 영업 - 출하실적등록 -->
         <div id="section-ship-report" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
@@ -746,91 +517,49 @@
                         <div class="form-control"><label>수량</label><input type="number" id="shipQty" required></div>
                         <div class="form-control"><label>로트번호</label><input type="text" id="shipLot" required></div>
                         <div class="form-control"><label>날짜</label><input type="date" id="shipDate" required></div>
-                        
-                        <div class="form-control">
-                            <label>매칭 포장 박스명</label>
-                            <select id="shipBoxName">
-                                <option value="BOX-KA4-01">BOX-KA4-01</option>
-                                <option value="BOX-NQ5-중형">BOX-NQ5-중형</option>
-                                <option value="BOX-공용-소형">BOX-공용-소형</option>
-                                <option value="철재 파레트">철재 파레트</option>
-                            </select>
-                        </div>
-
-                        <div class="form-control">
-                            <label>배송 차량 검색</label>
-                            <input type="text" id="shipCarInput" list="shipCarDatalist" required autocomplete="off">
-                        </div>
-                        <button type="submit" class="btn" style="background:#16a34a;">고객사 완제품 출하 확정</button>
+                        <div class="form-control"><label>매칭 포장 박스명</label><select id="shipBoxName"><option value="BOX-KA4-01">BOX-KA4-01</option><option value="BOX-NQ5-중형">BOX-NQ5-중형</option><option value="BOX-공용-소형">BOX-공용-소형</option><option value="철재 파레트">철재 파레트</option></select></div>
+                        <div class="form-control"><label>배송 차량 검색</label><input type="text" id="shipCarInput" list="shipCarDatalist" required autocomplete="off"><datalist id="shipCarDatalist"></datalist></div>
+                        <button type="submit" class="btn" style="background:#16a34a;">출하 확정</button>
                     </form>
                 </div>
-                <div class="card">
-                    <div class="card-title">출하일보 기록 원장</div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>출하일자</th><th>고객사</th><th>품번</th><th class="text-right">수량</th><th class="text-right">단가</th><th>차량번호</th><th>박스명</th><th>LOT</th></tr>
-                            </thead>
-                            <tbody id="shipTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="card"><div class="card-title">출하일보 기록 원장</div><div class="table-wrapper"><table><thead><tr><th>출하일자</th><th>고객사</th><th>품번</th><th class="text-right">수량</th><th class="text-right">단가</th><th>차량번호</th><th>박스명</th><th>LOT</th></tr></thead><tbody id="shipTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 🚚 영업 - 출하일정 신규 개편 (등록+조회) -->
         <div id="section-ship-schedule" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
                     <div class="card-title">출하 일정 등록</div>
                     <form onsubmit="submitShipSchedule(event)">
                         <div class="form-control"><label>출하 일자</label><input type="date" id="schedDate" required></div>
-                        <div class="form-control"><label>하차지 (목적지)</label><input type="text" id="schedDest" placeholder="예: 평택 물류센터" required></div>
-                        <div style="display:flex; gap:10px;">
-                            <div class="form-control" style="flex:1;"><label>출발 시간</label><input type="time" id="schedDepart" required></div>
-                            <div class="form-control" style="flex:1;"><label>도착(예정) 시간</label><input type="time" id="schedArrive" required></div>
-                        </div>
-                        <div class="form-control"><label>배송 차량 검색</label><input type="text" id="schedCar" list="shipCarDatalist" required autocomplete="off"><datalist id="shipCarDatalist"></datalist></div>
-                        <div class="form-control"><label>기사 이름</label><input type="text" id="schedDriver" placeholder="예: 김기사" required></div>
-                        <button type="submit" class="btn" style="background:#d97706;">출하 스케줄 등록</button>
+                        <div class="form-control"><label>하차지</label><input type="text" id="schedDest" required></div>
+                        <div style="display:flex; gap:10px;"><div class="form-control" style="flex:1;"><label>출발 시간</label><input type="time" id="schedDepart" required></div><div class="form-control" style="flex:1;"><label>도착 시간</label><input type="time" id="schedArrive" required></div></div>
+                        <div class="form-control"><label>배송 차량 검색</label><input type="text" id="schedCar" list="shipCarDatalist" required autocomplete="off"></div>
+                        <div class="form-control"><label>기사 이름</label><input type="text" id="schedDriver" required></div>
+                        <button type="submit" class="btn" style="background:#d97706;">일정 등록</button>
                     </form>
                 </div>
-                <div class="card">
-                    <div class="card-title">출하 배송 일정 조회</div>
-                    <div class="filter-box" style="padding:10px;">
-                        <input type="date" id="filterSchedDate" onchange="renderShipTable()" style="padding:4px; font-size:12px; width:120px;">
-                        <input type="text" id="filterSchedDest" oninput="renderShipTable()" placeholder="하차지 검색" style="padding:4px; font-size:12px; width:120px;">
-                        <button type="button" class="btn-mini" onclick="resetShipFilter()" style="margin:0; padding:6px; background:#64748b;">초기화</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>날짜</th><th>출발~도착</th><th>하차지</th><th>차량/기사</th></tr></thead>
-                            <tbody id="shipScheduleTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="card"><div class="card-title">출하 배송 일정 조회</div><div class="table-wrapper"><table><thead><tr><th>날짜</th><th>출발~도착</th><th>하차지</th><th>차량/기사</th></tr></thead><tbody id="shipScheduleTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 🚚 영업 - 차량관리 -->
         <div id="section-ship-car" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
-                    <div class="card-title">차량 유지비 지출 등록</div>
+                    <div class="card-title">차량 유지비 등록</div>
                     <form id="carForm">
                         <div class="form-control"><label>차량 검색</label><input type="text" id="carSelectInput" list="carSelectDatalist" required autocomplete="off"><datalist id="carSelectDatalist"></datalist></div>
-                        <div class="form-control"><label>주유비 (원)</label><input type="number" id="carOil" value="0" required></div>
-                        <div class="form-control"><label>수리비 (원)</label><input type="number" id="carRepair" value="0" required></div>
-                        <div class="form-control"><label>기타 유지비 (원)</label><input type="number" id="carEtc" value="0" required></div>
-                        <div class="form-control"><label>지출 기록일</label><input type="date" id="carDate" required></div>
-                        <button type="submit" class="btn">장부 기록</button>
+                        <div class="form-control"><label>주유비</label><input type="number" id="carOil" value="0"></div>
+                        <div class="form-control"><label>수리비</label><input type="number" id="carRepair" value="0"></div>
+                        <div class="form-control"><label>기타</label><input type="number" id="carEtc" value="0"></div>
+                        <div class="form-control"><label>기록일</label><input type="date" id="carDate" required></div>
+                        <button type="submit" class="btn">기록 완료</button>
                     </form>
                 </div>
                 <div class="card"><div class="card-title">차량 유지비 장부</div><div class="table-wrapper"><table><thead><tr><th>일자</th><th>차량</th><th class="text-right">주유비</th><th class="text-right">수리비</th><th class="text-right">기타</th><th class="text-right">합계</th></tr></thead><tbody id="carTableBody"></tbody></table></div></div>
             </div>
         </div>
 
-        <!-- 🖨️ 영업 - 명세표 등록/출력 -->
         <div id="section-ship-bill" class="erp-section">
             <div class="dashboard-grid">
                 <div class="card">
@@ -839,441 +568,202 @@
                         <div class="form-control"><label>발행 일자</label><input type="date" id="billDate" required></div>
                         <div class="form-control"><label>품번/품명 검색</label><input type="text" id="billItem" list="masterItemDatalist" onchange="syncBillVendor()" required autocomplete="off"></div>
                         <div class="form-control"><label>발행 거래처</label><input type="text" id="billVendor" list="vendorDatalist" required autocomplete="off"><datalist id="vendorDatalist"></datalist></div>
-                        <div style="display:flex; gap:10px;">
-                            <div class="form-control" style="flex:1;"><label>수량</label><input type="number" id="billQty" required></div>
-                            <div class="form-control" style="flex:1;"><label>로트(LOT)</label><input type="text" id="billLot" required></div>
-                        </div>
-                        <button type="submit" class="btn" style="background:#0f766e;">명세표 전산 발행 저장</button>
+                        <div style="display:flex; gap:10px;"><div class="form-control" style="flex:1;"><label>수량</label><input type="number" id="billQty" required></div><div class="form-control" style="flex:1;"><label>로트</label><input type="text" id="billLot" required></div></div>
+                        <button type="submit" class="btn" style="background:#0f766e;">저장</button>
                     </form>
                 </div>
                 <div class="card" style="grid-row: span 2;">
-                    <div class="card-title">거래명세표 인쇄 양식 (선택 시 표기)</div>
-                    <div class="icon-btn-group" style="margin-top:0; margin-bottom:15px;">
-                        <button type="button" class="icon-btn btn-print" onclick="printStatement()">실시간 명세표 인쇄</button>
-                        <button type="button" class="icon-btn btn-pdf" onclick="downloadStatementPDF()">PDF 파일 다운로드</button>
-                    </div>
-                    <div id="printArea" class="statement-box">출력할 명세표를 좌측 목록에서 [양식 보기] 해주세요.</div>
+                    <div class="card-title">거래명세표 인쇄 양식</div>
+                    <div class="icon-btn-group" style="margin-bottom:15px;"><button type="button" class="icon-btn btn-print" onclick="printStatement()">인쇄</button><button type="button" class="icon-btn btn-pdf" onclick="downloadStatementPDF()">PDF 다운로드</button></div>
+                    <div id="printArea" class="statement-box">목록에서 [양식 보기]를 눌러주세요.</div>
                 </div>
                 <div class="card">
-                    <div class="card-title">발행 명세표 목록 조회</div>
-                    <div class="filter-box" style="padding:10px;">
-                        <input type="date" id="filterBillDate" onchange="renderBillTable()" style="padding:4px; font-size:12px; width:120px;">
-                        <input type="text" id="filterBillItem" oninput="renderBillTable()" placeholder="품번 검색" style="padding:4px; font-size:12px; width:120px;">
-                        <button type="button" class="btn-mini" onclick="resetBillFilter()" style="margin:0; padding:6px; background:#64748b;">초기화</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead><tr><th>날짜</th><th>거래처</th><th>품목/수량</th><th>기능</th></tr></thead>
-                            <tbody id="billTableBody"></tbody>
-                        </table>
-                    </div>
+                    <div class="card-title">발행 목록</div>
+                    <div class="table-wrapper"><table><thead><tr><th>날짜</th><th>거래처</th><th>품목/수량</th><th>기능</th></tr></thead><tbody id="billTableBody"></tbody></table></div>
                 </div>
-            </div>
-        </div>
-
-        <div id="section-quality" class="erp-section">
-            <div class="card full-width"><div class="card-title">품질 불량 관리</div><p>생산일보 실적 연동 시스템 작동 중</p></div>
-        </div>
-
-        <!-- 👥 근태현황 -->
-        <div id="section-att-reg" class="erp-section">
-            <div class="dashboard-grid">
-                <div class="card">
-                    <div class="card-title">부서원 근태 및 휴가 등록</div>
-                    <form id="attForm">
-                        <div class="form-control"><label>직원 검색 (마스터 연동)</label><select id="attEmpSelect" required></select></div>
-                        <div class="form-control"><label>일자</label><input type="date" id="attDate" required></div>
-                        <div class="form-control">
-                            <label>근태 구분</label>
-                            <select id="attType" onchange="toggleOvertimeField()">
-                                <option value="출근">정상 출근</option><option value="연차">연차</option>
-                                <option value="반차">반차</option><option value="조퇴">조퇴</option><option value="지각">지각</option>
-                            </select>
-                        </div>
-                        <div class="form-control" id="overtimeFieldWrapper"><label>연장(H)</label><input type="number" id="attOvertime" value="0" min="0" step="0.5"></div>
-                        <button type="submit" class="btn" style="background:#1e3a8a;">상신</button>
-                    </form>
-                </div>
-                <div class="card"><div class="card-title">등록 이력</div><div class="table-wrapper"><table><thead><tr><th>일자</th><th>이름</th><th>유형</th><th>결재</th></tr></thead><tbody id="myAttTableBody"></tbody></table></div></div>
-            </div>
-        </div>
-
-        <div id="section-att-list" class="erp-section">
-            <div class="card full-width">
-                <div class="card-title" id="attListTitle">부서별 근태 모니터링</div>
-                <div class="filter-box">
-                    <select id="attFilterDept" onchange="onDeptFilterChange()"><option value="전체">전체 부서</option><option value="조립">조립</option><option value="사출">사출</option><option value="영업">영업</option><option value="자재">자재</option><option value="품질">품질</option><option value="인사">인사</option><option value="GSC">GSC</option><option value="포장">포장</option></select>
-                </div>
-                <div class="calendar-box" style="margin-bottom:25px;"><div class="calendar-header-bar"><div style="font-size:15px; font-weight:bold;">근태 달력 (최종 승인자)</div></div><div class="calendar-grid" id="attendanceCalendarGrid"></div></div>
-                <div class="table-wrapper"><table><thead><tr><th>일자</th><th>부서</th><th>성명</th><th>구분</th><th>연장</th><th>진행상태</th><th>결재</th></tr></thead><tbody id="globalAttTableBody"></tbody></table></div>
             </div>
         </div>
     </div>
 
     <script>
+     
+        // 🔥 파이어베이스 설정값 (장운산업 실제 연동 키)
+        const firebaseConfig = {
+          apiKey: "AIzaSyB6VKMKo8-Q08cOB_znifREfGPgqFVoAJ4",
+          authDomain: "jangwoon-ef9cc.firebaseapp.com",
+          databaseURL: "https://jangwoon-ef9cc-default-rtdb.firebaseio.com",
+          projectId: "jangwoon-ef9cc",
+          storageBucket: "jangwoon-ef9cc.firebasestorage.app",
+          messagingSenderId: "956380401892",
+          appId: "1:956380401892:web:9865061748d5ba1ca01cf1"
+        };
+        let isFirebaseActive = false; let db = null;
+        if (firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.databaseURL.includes("firebaseio.com")) {
+            firebase.initializeApp(firebaseConfig); db = firebase.database(); isFirebaseActive = true;
+        }
+
+        // 전사 실시간 영구동기화 시스템 저장 모듈
+        window.saveData = function(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+            if(isFirebaseActive) { db.ref(key).set(data); }
+        };
+
         document.addEventListener("DOMContentLoaded", function() {
-            // 오늘 날짜 기본값 세팅용 헬퍼 함수
-            const getToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
-            const inputDates = document.querySelectorAll("input[type='date']");
-            inputDates.forEach(input => { if(!input.value) input.value = getToday(); });
-
-            // 🚨 전사 DB 초기화 함수
-            window.resetWholeDatabase = function() {
-                if(confirm("모든 시스템 데이터를 삭제하시겠습니까? 초기화 후에는 복구할 수 없습니다.")) {
-                    localStorage.clear(); alert("데이터 초기화가 완료되었습니다."); location.reload();
-                }
-            };
-
-            let loggedInUser = null;
-
-            // 🔐 로그인 
-            const loginForm = document.getElementById("loginForm");
-            loginForm.addEventListener("submit", function(e) {
-                e.preventDefault();
-                const uid = document.getElementById("userId").value; 
-                const upw = document.getElementById("userPw").value;
-                
-                loggedInUser = null;
-                let empMaster = JSON.parse(localStorage.getItem('erpEmployees')) || [];
-
-                if(uid === "admin" && upw === "1234") {
-                    loggedInUser = { id: "admin", name: "최고관리자", dept: "전체", role: "admin" };
-                } else {
-                    const emp = empMaster.find(e => e.type === "정직원" && e.id === uid);
-                    if(emp && upw === "1234") {
-                        let r = "user";
-                        if(emp.pos.includes("조장")) r = "jojang";
-                        if(emp.pos.includes("차장")) r = "chajang";
-                        if(emp.dept === "인사" && (emp.pos.includes("과장") || emp.pos.includes("팀장") || emp.pos.includes("부장"))) r = "hr";
-                        loggedInUser = { id: emp.id, name: emp.name, dept: emp.dept, role: r };
-                    }
-                }
-
-                if(loggedInUser) {
-                    document.getElementById("login-section").style.display = "none"; 
-                    document.getElementById("erp-main-content").style.display = "block";
-                    document.getElementById("current-user-badge").innerText = `[${loggedInUser.dept}] ${loggedInUser.name}`;
-
-                    const selectDept = document.getElementById("attFilterDept");
-                    if (loggedInUser.role === "jojang" || loggedInUser.role === "chajang") {
-                        selectDept.value = loggedInUser.dept; selectDept.disabled = true; 
-                    } else {
-                        selectDept.value = "전체"; selectDept.disabled = false; 
-                    }
-
-                    initSelectBoxes(); initAttEmpSelect(); clearAllDisplay();
-                    document.getElementById("menu-dash").classList.add("active"); document.getElementById("section-dash").style.display = "block";
-                    refreshAllTables();
-                } else { 
-                    alert("등록되지 않은 아이디이거나 비밀번호가 틀렸습니다."); 
-                }
-            });
-
-            document.getElementById("btnLogout").addEventListener("click", function() { location.reload(); });
-
-            // 🌟 전사 DB 변수 세팅
+            // 구조 변수 초기화
             let defaultItems = JSON.parse(localStorage.getItem('erpItems')) || [];
             let carMasterData = JSON.parse(localStorage.getItem('erpCarsMaster')) || [];
             let empMasterData = JSON.parse(localStorage.getItem('erpEmployees')) || [];
-            let stopCodeData = JSON.parse(localStorage.getItem('erpStopCodes')) || []; 
-
+            let stopCodeData = JSON.parse(localStorage.getItem('erpStopCodes')) || [];
             let buyData = JSON.parse(localStorage.getItem('erpBuys')) || [];
             let equipData = JSON.parse(localStorage.getItem('erpEquip')) || [];
             let planData = JSON.parse(localStorage.getItem('erpPlans')) || [];
             let directData = JSON.parse(localStorage.getItem('erpDirects')) || [];
             let reportData = JSON.parse(localStorage.getItem('erpReports')) || [];
-            let prodLossData = JSON.parse(localStorage.getItem('erpProdLoss')) || []; 
+            let prodLossData = JSON.parse(localStorage.getItem('erpProdLoss')) || [];
             let moldData = JSON.parse(localStorage.getItem('erpMolds')) || [];
-            
-            let assemProdData = JSON.parse(localStorage.getItem('erpAssemProd')) || { "HVAC": [], "YB PE": [] };
-            let assemLossData = JSON.parse(localStorage.getItem('erpAssemLoss')) || { "HVAC": [], "YB PE": [] };
-            
+            let assemProdData = JSON.parse(localStorage.getItem('erpAssemProd')) || { "KA4": [], "YB PE": [] };
+            let assemLossData = JSON.parse(localStorage.getItem('erpAssemLoss')) || { "KA4": [], "YB PE": [] };
             let gscWorkData = JSON.parse(localStorage.getItem('erpGscWork')) || [];
             let gscShipData = JSON.parse(localStorage.getItem('erpGscShip')) || [];
             let packWorkData = JSON.parse(localStorage.getItem('erpPackWork')) || [];
             let packShipData = JSON.parse(localStorage.getItem('erpPackShip')) || [];
-
             let shipData = JSON.parse(localStorage.getItem('erpShips')) || [];
-            let shipScheduleData = JSON.parse(localStorage.getItem('erpShipSchedule')) || []; 
-            let billData = JSON.parse(localStorage.getItem('erpBills')) || []; 
+            let shipScheduleData = JSON.parse(localStorage.getItem('erpShipSchedule')) || [];
+            let billData = JSON.parse(localStorage.getItem('erpBills')) || [];
             let carData = JSON.parse(localStorage.getItem('erpCars')) || [];
             let attendanceData = JSON.parse(localStorage.getItem('erpAttendance')) || [];
+            let noticeData = JSON.parse(localStorage.getItem('erpNotices')) || [];
+            let issueData = JSON.parse(localStorage.getItem('erpIssues')) || [];
 
-            let noticeData = JSON.parse(localStorage.getItem('erpNotices')) || []; 
-            let issueData = JSON.parse(localStorage.getItem('erpIssues')) || []; 
+            function loadAllDataFromFirebase(callback) {
+                if(!isFirebaseActive) { callback(); return; }
+                db.ref().once('value').then(snapshot => {
+                    const d = snapshot.val() || {};
+                    if(d.erpItems) defaultItems = d.erpItems; if(d.erpCarsMaster) carMasterData = d.erpCarsMaster;
+                    if(d.erpEmployees) empMasterData = d.erpEmployees; if(d.erpStopCodes) stopCodeData = d.erpStopCodes;
+                    if(d.erpBuys) buyData = d.erpBuys; if(d.erpEquip) equipData = d.erpEquip;
+                    if(d.erpPlans) planData = d.erpPlans; if(d.erpDirects) directData = d.erpDirects;
+                    if(d.erpReports) reportData = d.erpReports; if(d.erpProdLoss) prodLossData = d.erpProdLoss;
+                    if(d.erpMolds) moldData = d.erpMolds; if(d.erpAssemProd) assemProdData = d.erpAssemProd;
+                    if(d.erpAssemLoss) assemLossData = d.erpAssemLoss; if(d.erpGscWork) gscWorkData = d.erpGscWork;
+                    if(d.erpGscShip) gscShipData = d.erpGscShip; if(d.erpPackWork) packWorkData = d.erpPackWork;
+                    if(d.erpPackShip) packShipData = d.erpPackShip; if(d.erpShips) shipData = d.erpShips;
+                    if(d.erpShipSchedule) shipScheduleData = d.erpShipSchedule; if(d.erpBills) billData = d.erpBills;
+                    if(d.erpCars) carData = d.erpCars; if(d.erpAttendance) attendanceData = d.erpAttendance;
+                    if(d.erpNotices) noticeData = d.erpNotices; if(d.erpIssues) issueData = d.erpIssues;
+                    callback();
+                }).catch(() => callback());
+            }
 
-            function getMasterItem(val) {
-                if(!val) return null; return defaultItems.find(i => `${i.id} (${i.name})` === val || i.id === val || i.name === val);
-            }
-            function getMasterCar(val) {
-                if(!val) return null; return carMasterData.find(c => `${c.name} (${c.no})` === val || c.name === val || c.no === val);
-            }
+            const loginForm = document.getElementById("loginForm");
+            loginForm.addEventListener("submit", function(e) {
+                e.preventDefault(); const uid = document.getElementById("userId").value; const upw = document.getElementById("userPw").value;
+                loadAllDataFromFirebase(() => {
+                    if(uid === "admin" && upw === "1234") { loggedInUser = { id: "admin", name: "최고관리자", dept: "전체", role: "admin" }; } 
+                    else {
+                        const emp = empMasterData.find(e => e.type === "정직원" && e.id === uid);
+                        if(emp && upw === "1234") {
+                            let r = "user"; if(emp.pos.includes("조장")) r = "jojang"; if(emp.pos.includes("차장")) r = "chajang";
+                            if(emp.dept === "인사" && (emp.pos.includes("과장") || emp.pos.includes("팀장"))) r = "hr";
+                            loggedInUser = { id: emp.id, name: emp.name, dept: emp.dept, role: r };
+                        }
+                    }
+                    if(loggedInUser) {
+                        document.getElementById("login-section").style.display = "none"; document.getElementById("erp-main-content").style.display = "block";
+                        document.getElementById("current-user-badge").innerText = `[${loggedInUser.dept}] ${loggedInUser.name}`;
+                        const selectDept = document.getElementById("attFilterDept");
+                        if (loggedInUser.role === "jojang" || loggedInUser.role === "chajang") { selectDept.value = loggedInUser.dept; selectDept.disabled = true; } else { selectDept.value = "전체"; selectDept.disabled = false; }
+                        initSelectBoxes(); initAttEmpSelect(); clearAllDisplay();
+                        document.getElementById("menu-dash").classList.add("active"); document.getElementById("section-dash").style.display = "block";
+                        refreshAllTables();
+                        if(isFirebaseActive) alert("☁️ 파이어베이스 클라우드 데이터 실시간 동기화 모드 가동!");
+                    } else { alert("계정 정보가 틀렸습니다."); }
+                });
+            });
 
             function initSelectBoxes() {
-                const buyDl = document.getElementById("buyItemDatalist");
-                const eqDl = document.getElementById("eqItemDatalist");
-                const masterDl = document.getElementById("masterItemDatalist"); 
-                const prodTargets = ["planItemDatalist", "directItemDatalist", "reportItemDatalist", "shipItemDatalist", "hvacProdDatalist", "ybpeProdDatalist"];
-
-                if(buyDl) { buyDl.innerHTML = ""; const classFilter = document.getElementById("buyClass"); if(classFilter){ const bItems = defaultItems.filter(i => i.type === classFilter.value); bItems.forEach(item => buyDl.innerHTML += `<option value="${item.id} (${item.name})">`); } }
-                if(eqDl) { eqDl.innerHTML = ""; const eItems = defaultItems.filter(i => i.type === "비품"); eItems.forEach(item => eqDl.innerHTML += `<option value="${item.id} (${item.name})">`); }
+                const buyDl = document.getElementById("buyItemDatalist"); const eqDl = document.getElementById("eqItemDatalist"); const masterDl = document.getElementById("masterItemDatalist");
+                const prodTargets = ["planItemDatalist", "directItemDatalist", "reportItemDatalist", "shipItemDatalist", "ka4ProdDatalist", "ybpeProdDatalist"];
+                if(buyDl) { buyDl.innerHTML = ""; const bItems = defaultItems.filter(i => i.type === document.getElementById("buyClass").value); bItems.forEach(item => buyDl.innerHTML += `<option value="${item.id} (${item.name})">`); }
+                if(eqDl) { eqDl.innerHTML = ""; defaultItems.filter(i => i.type === "비품").forEach(item => eqDl.innerHTML += `<option value="${item.id} (${item.name})">`); }
                 if(masterDl) { masterDl.innerHTML = ""; defaultItems.forEach(item => masterDl.innerHTML += `<option value="${item.id} (${item.name})">`); }
-                
-                prodTargets.forEach(tid => { const el = document.getElementById(tid); if(el) { el.innerHTML = ""; const pItems = defaultItems.filter(i => i.type === "완제품"); pItems.forEach(item => el.innerHTML += `<option value="${item.id} (${item.name})">`); }});
-
-                const carTargets = ["shipCarDatalist", "carSelectDatalist"];
-                carTargets.forEach(tid => { const el = document.getElementById(tid); if(el) { el.innerHTML = ""; carMasterData.forEach(c => el.innerHTML += `<option value="${c.name} (${c.no})">[${c.type} / ${c.ton}]`); } });
-
-                const vendorDl = document.getElementById("vendorDatalist");
-                if(vendorDl) { vendorDl.innerHTML = ""; const vSet = new Set(defaultItems.filter(i=>i.vendor).map(i=>i.vendor)); vSet.forEach(v => vendorDl.innerHTML += `<option value="${v}">`); }
-
+                prodTargets.forEach(tid => { const el = document.getElementById(tid); if(el) { el.innerHTML = ""; defaultItems.filter(i => i.type === "완제품").forEach(item => el.innerHTML += `<option value="${item.id} (${item.name})">`); }});
+                ["shipCarDatalist", "carSelectDatalist"].forEach(tid => { const el = document.getElementById(tid); if(el) { el.innerHTML = ""; carMasterData.forEach(c => el.innerHTML += `<option value="${c.name} (${c.no})">`); } });
+                const vendorDl = document.getElementById("vendorDatalist"); if(vendorDl) { vendorDl.innerHTML = ""; const vSet = new Set(defaultItems.filter(i=>i.vendor).map(i=>i.vendor)); vSet.forEach(v => vendorDl.innerHTML += `<option value="${v}">`); }
                 syncStopCodes();
             }
 
-            // 🛑 설비정지 마스터 코드 동기화
             window.syncStopCodes = function() {
-                const targets = ["prodLossCode", "hvacLossCode", "ybpeLossCode"];
-                targets.forEach(tid => {
-                    const el = document.getElementById(tid);
-                    if(el) {
-                        el.innerHTML = "";
-                        stopCodeData.forEach(c => { el.innerHTML += `<option value="${c.code} - ${c.name}">${c.code} (${c.name})</option>`; });
-                    }
-                });
+                ["prodLossCode", "ka4LossCode", "ybpeLossCode"].forEach(tid => { const el = document.getElementById(tid); if(el) { el.innerHTML = ""; stopCodeData.forEach(c => { el.innerHTML += `<option value="${c.code} - ${c.name}">${c.code} (${c.name})</option>`; }); } });
             };
 
-            window.filterBuyItemSelect = function() { const el = document.getElementById("buyItemInput"); if(el) el.value = ""; initSelectBoxes(); };
-
+            window.filterBuyItemSelect = function() { document.getElementById("buyItemInput").value = ""; initSelectBoxes(); };
             window.syncBuyDetails = function() { const itm = getMasterItem(document.getElementById("buyItemInput").value); if(itm) { document.getElementById("buyItemInput").value = `${itm.id} (${itm.name})`; document.getElementById("buyCompany").value = itm.vendor || ""; document.getElementById("buyPrice").value = itm.isFree ? "무상사급" : itm.price; } };
             window.syncEquipDetails = function() { const itm = getMasterItem(document.getElementById("eqItemInput").value); if(itm) { document.getElementById("eqItemInput").value = `${itm.id} (${itm.name})`; document.getElementById("eqVendor").value = itm.vendor || ""; document.getElementById("eqPrice").value = itm.isFree ? 0 : itm.price; } };
             window.syncShipPrice = function() { const itm = getMasterItem(document.getElementById("shipItemInput").value); if(itm) { document.getElementById("shipItemInput").value = `${itm.id} (${itm.name})`; document.getElementById("shipCompany").value = itm.vendor || ""; document.getElementById("shipPrice").value = itm.isFree ? "무상사급" : itm.price; } };
             window.syncBillVendor = function() { const itm = getMasterItem(document.getElementById("billItem").value); if(itm) { document.getElementById("billItem").value = `${itm.id} (${itm.name})`; document.getElementById("billVendor").value = itm.vendor || ""; } };
 
-            // 👨‍💼 직원 등록
-            window.toggleEmpType = function() {
-                const t = document.getElementById("sysEmpType").value;
-                const wrap = document.getElementById("sysEmpFullTimeWrapper");
-                if(t === "정직원") { wrap.style.display = "block"; document.getElementById("sysEmpId").required = true; }
-                else { wrap.style.display = "none"; document.getElementById("sysEmpId").required = false; document.getElementById("sysEmpId").value=""; }
-            };
-            
+            window.toggleEmpType = function() { const t = document.getElementById("sysEmpType").value; document.getElementById("sysEmpFullTimeWrapper").style.display = t === "정직원" ? "block" : "none"; };
             document.getElementById("sysEmpForm").addEventListener("submit", function(e) {
-                e.preventDefault();
-                const type = document.getElementById("sysEmpType").value;
-                let id = document.getElementById("sysEmpId").value;
-                const fileInput = document.getElementById("sysEmpPhoto");
-                const fname = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : "";
-                
-                if(type === "계약직") id = "CNT_" + Date.now(); 
-
-                empMasterData.push({
-                    id: id, type: type, dept: document.getElementById("sysEmpDept").value,
-                    name: document.getElementById("sysEmpName").value, phone: document.getElementById("sysEmpPhone").value,
-                    pos: document.getElementById("sysEmpPosition") ? document.getElementById("sysEmpPosition").value : "",
-                    photo: fname
-                });
-                localStorage.setItem('erpEmployees', JSON.stringify(empMasterData));
-                alert("직원 명부에 정상 등록되었습니다."); document.getElementById("sysEmpForm").reset(); toggleEmpType(); refreshAllTables();
+                e.preventDefault(); const type = document.getElementById("sysEmpType").value; let id = document.getElementById("sysEmpId").value; if(type === "계약직") id = "CNT_" + Date.now();
+                empMasterData.push({ id: id, type: type, dept: document.getElementById("sysEmpDept").value, name: document.getElementById("sysEmpName").value, phone: document.getElementById("sysEmpPhone").value, pos: document.getElementById("sysEmpPosition") ? document.getElementById("sysEmpPosition").value : "", photo: "" });
+                saveData('erpEmployees', empMasterData); alert("직원 명부 등록 완료."); document.getElementById("sysEmpForm").reset(); toggleEmpType(); refreshAllTables();
             });
 
-            window.delEmp = function(id) {
-                if(confirm("정말 이 직원을 명부에서 삭제하시겠습니까?")) {
-                    empMasterData = empMasterData.filter(e => e.id !== id);
-                    localStorage.setItem('erpEmployees', JSON.stringify(empMasterData)); refreshAllTables();
-                }
-            };
+            window.delEmp = function(id) { if(confirm("삭제하시겠습니까?")) { empMasterData = empMasterData.filter(e => e.id !== id); saveData('erpEmployees', empMasterData); refreshAllTables(); } };
+            function renderEmpTable() { const tbody = document.getElementById("sysEmpTableBody"); if(!tbody) return; tbody.innerHTML = ""; empMasterData.forEach(e => { tbody.innerHTML += `<tr><td><strong>${e.dept}</strong></td><td>${e.type}</td><td>${e.name}</td><td>${e.phone}</td><td>${e.type==="정직원"?e.id+" / "+e.pos:"-"}</td><td><button class="btn-mini btn-reject" onclick="delEmp('${e.id}')">삭제</button></td></tr>`; }); }
+            function initAttEmpSelect() { const sel = document.getElementById("attEmpSelect"); if(!sel) return; sel.innerHTML = ""; const filtered = (loggedInUser && ["jojang","chajang"].includes(loggedInUser.role)) ? empMasterData.filter(e => e.dept === loggedInUser.dept) : empMasterData; filtered.forEach(e => sel.innerHTML += `<option value="${e.name}" data-dept="${e.dept}">[${e.dept}] ${e.name}</option>`); }
 
-            function renderEmpTable() {
-                const tbody = document.getElementById("sysEmpTableBody"); if(!tbody) return; tbody.innerHTML = "";
-                empMasterData.forEach(e => {
-                    const badge = e.type==="정직원" ? `<span class="badge" style="background:#2563eb;">정직원</span>` : `<span class="badge" style="background:#f59e0b;">계약직</span>`;
-                    const idStr = e.type==="정직원" ? `${e.id} / ${e.pos}` : `-`;
-                    tbody.innerHTML += `<tr><td><strong>${e.dept}</strong></td><td>${badge}</td><td>${e.name}</td><td>${e.phone}</td><td>${idStr}</td><td><button class="btn-mini btn-reject" onclick="delEmp('${e.id}')">삭제</button></td></tr>`;
-                });
-            }
-
-            function initAttEmpSelect() {
-                const sel = document.getElementById("attEmpSelect"); if(!sel) return; sel.innerHTML = "";
-                const filtered = (loggedInUser && (loggedInUser.role === 'jojang' || loggedInUser.role === 'chajang')) ? empMasterData.filter(e => e.dept === loggedInUser.dept) : empMasterData;
-                filtered.forEach(e => sel.innerHTML += `<option value="${e.name}" data-dept="${e.dept}">[${e.dept}] ${e.name} (${e.type})</option>`);
-            }
-
-            // GSC / 포장 공용 로직
             window.submitBasicLog = function(event, logType) {
-                let e = event || window.event; e.preventDefault();
-                let pDate, pItem, pQty, pLot;
+                let e = event || window.event; e.preventDefault(); let pDate, pItem, pQty, pLot;
                 if(logType==='gscWork'){ pDate='gscWorkDate'; pItem='gscWorkItem'; pQty='gscWorkQty'; pLot='gscWorkLot'; }
                 if(logType==='gscShip'){ pDate='gscShipDate'; pItem='gscShipItem'; pQty='gscShipQty'; pLot='gscShipLot'; }
                 if(logType==='packWork'){ pDate='packWorkDate'; pItem='packWorkItem'; pQty='packWorkQty'; pLot='packWorkLot'; }
                 if(logType==='packShip'){ pDate='packShipDate'; pItem='packShipItem'; pQty='packShipQty'; pLot='packShipLot'; }
-
-                let inputVal = document.getElementById(pItem).value; let itm = getMasterItem(inputVal); if(itm) inputVal = `${itm.id} (${itm.name})`;
-                const newRec = { date: document.getElementById(pDate).value, item: inputVal, qty: document.getElementById(pQty).value, lot: document.getElementById(pLot).value };
-                
-                if(logType==='gscWork'){ gscWorkData.push(newRec); localStorage.setItem('erpGscWork', JSON.stringify(gscWorkData)); }
-                if(logType==='gscShip'){ gscShipData.push(newRec); localStorage.setItem('erpGscShip', JSON.stringify(gscShipData)); }
-                if(logType==='packWork'){ packWorkData.push(newRec); localStorage.setItem('erpPackWork', JSON.stringify(packWorkData)); }
-                if(logType==='packShip'){ packShipData.push(newRec); localStorage.setItem('erpPackShip', JSON.stringify(packShipData)); }
-                
+                let val = document.getElementById(pItem).value; let itm = getMasterItem(val); if(itm) val = `${itm.id} (${itm.name})`;
+                const rec = { date: document.getElementById(pDate).value, item: val, qty: document.getElementById(pQty).value, lot: document.getElementById(pLot).value };
+                if(logType==='gscWork'){ gscWorkData.push(rec); saveData('erpGscWork', gscWorkData); }
+                if(logType==='gscShip'){ gscShipData.push(rec); saveData('erpGscShip', gscShipData); }
+                if(logType==='packWork'){ packWorkData.push(rec); saveData('erpPackWork', packWorkData); }
+                if(logType==='packShip'){ packShipData.push(rec); saveData('erpPackShip', packShipData); }
                 document.getElementById(pItem).value=""; document.getElementById(pQty).value=""; document.getElementById(pLot).value="";
-                refreshAllTables(); alert("기록이 완료되었습니다.");
+                refreshAllTables(); alert("기록 완료");
             };
 
-            function renderBasicLog(data, bodyId) {
-                const tbody = document.getElementById(bodyId); if(!tbody) return; tbody.innerHTML = "";
-                data.forEach(d => tbody.innerHTML += `<tr><td>${d.date}</td><td><strong>${d.item}</strong></td><td class="text-right" style="color:#16a34a; font-weight:bold;">${d.qty}</td><td>${d.lot}</td></tr>`);
-            }
+            function renderBasicLog(data, bodyId) { const tbody = document.getElementById(bodyId); if(!tbody) return; tbody.innerHTML = ""; data.forEach(d => tbody.innerHTML += `<tr><td>${d.date}</td><td><strong>${d.item}</strong></td><td class="text-right">${d.qty}</td><td>${d.lot}</td></tr>`); }
 
-            // 출하일정 
             window.submitShipSchedule = function(event) {
-                let e = event || window.event; e.preventDefault();
-                let carVal = document.getElementById("schedCar").value; let car = getMasterCar(carVal); if(car) carVal = `${car.name} (${car.no})`;
+                let e = event || window.event; e.preventDefault(); let carVal = document.getElementById("schedCar").value; let car = getMasterCar(carVal); if(car) carVal = `${car.name} (${car.no})`;
                 shipScheduleData.push({ date: document.getElementById("schedDate").value, dest: document.getElementById("schedDest").value, depart: document.getElementById("schedDepart").value, arrive: document.getElementById("schedArrive").value, car: carVal, driver: document.getElementById("schedDriver").value });
-                localStorage.setItem('erpShipSchedule', JSON.stringify(shipScheduleData)); refreshAllTables(); alert("일정이 등록되었습니다.");
+                saveData('erpShipSchedule', shipScheduleData); refreshAllTables(); alert("일정 등록 완료");
             };
 
-            window.renderShipTable = function() {
-                const tbody = document.getElementById("shipTableBody"); if(tbody) { tbody.innerHTML = "";
-                    shipData.forEach(s => { let itm = getMasterItem(s.id); let price = itm && itm.isFree ? 0 : s.price; tbody.innerHTML += `<tr><td>${s.date}</td><td>${s.company}</td><td><strong>${s.id}</strong></td><td class="text-right">${s.qty}</td><td class="text-right">${price===0?'무상':price}</td><td>${s.carNo}</td><td>${s.boxName}</td><td>${s.lot}</td></tr>`; });
-                }
-                const schedBody = document.getElementById("shipScheduleTableBody"); if(!schedBody) return; schedBody.innerHTML = "";
-                const filterCompEl = document.getElementById("filterCompany");
-                const filterDateEl = document.getElementById("filterDate");
-                const fCompany = filterCompEl ? filterCompEl.value : "";
-                const fDate = filterDateEl ? filterDateEl.value : "";
-                shipScheduleData.forEach(s => {
-                    const matchDate = fDate === "" || s.date === fDate;
-                    const matchDest = fCompany === "" || s.dest.includes(fCompany);
-                    if(matchDate && matchDest) {
-                        schedBody.innerHTML += `<tr><td>${s.date}</td><td><strong style="color:#dc2626;">${s.depart}</strong> ~ <strong style="color:#2563eb;">${s.arrive}</strong></td><td><strong>${s.dest}</strong></td><td>${s.car} / ${s.driver}</td></tr>`;
-                    }
-                });
-            };
-            window.resetShipFilter = function() { const c=document.getElementById("filterCompany"); if(c) c.value=""; const d=document.getElementById("filterDate"); if(d) d.value=""; renderShipTable(); };
-
-            // 🖨️ 명세표 등록
-            window.submitBill = function(event) {
-                let e = event || window.event; e.preventDefault();
-                let inputVal = document.getElementById("billItem").value; let itm = getMasterItem(inputVal); if(itm) inputVal = `${itm.id} (${itm.name})`;
-                billData.push({ id: Date.now(), date: document.getElementById("billDate").value, item: inputVal, vendor: document.getElementById("billVendor").value, qty: document.getElementById("billQty").value, lot: document.getElementById("billLot").value });
-                localStorage.setItem('erpBills', JSON.stringify(billData)); refreshAllTables(); alert("명세표가 등록되었습니다.");
-            };
-
-            window.renderBillTable = function() {
-                const tbody = document.getElementById("billTableBody"); if(!tbody) return; tbody.innerHTML = "";
-                const fdEl = document.getElementById("filterBillDate"); const fiEl = document.getElementById("filterBillItem");
-                const fd = fdEl ? fdEl.value : ""; const fi = fiEl ? fiEl.value : "";
-                billData.forEach((b, idx) => {
-                    if((fd === "" || b.date === fd) && (fi === "" || b.item.includes(fi))) {
-                        tbody.innerHTML += `<tr><td>${b.date}</td><td><strong>${b.vendor}</strong></td><td>${b.item} (${b.qty}개)</td><td><button class="btn-mini btn-view" onclick="previewBill(${idx})">양식 보기</button></td></tr>`;
-                    }
-                });
-            };
-            window.resetBillFilter = function() { const fd=document.getElementById("filterBillDate"); if(fd) fd.value=""; const fi=document.getElementById("filterBillItem"); if(fi) fi.value=""; renderBillTable(); };
-
-            window.previewBill = function(idx) {
-                const b = billData[idx]; if(!b) return;
-                let itm = getMasterItem(b.item);
-                let price = itm ? itm.price : 0; let totalAmt = price * b.qty;
-                const printArea = document.getElementById("printArea");
-                printArea.innerHTML = `
-                    <div id="pdf-target-zone">
-                        <div class="statement-title">거 래 명 세 표</div>
-                        <div style="text-align:right; font-size:11px; margin-bottom:10px;">출하일자: ${b.date} (공급받는자 보관용)</div>
-                        <table style="width:100%; border:2px solid #1e3a8a; border-collapse:collapse; font-size:12px;">
-                            <tr><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급자</td><td style="border:1px solid #cbd5e1; padding:8px;">장운산업 사업부</td><td style="background:#f1f5f9; font-weight:bold; width:20%; border:1px solid #cbd5e1; padding:8px;">공급받는자</td><td style="border:1px solid #cbd5e1; padding:8px;"><strong>${b.vendor} 귀하</strong></td></tr>
-                            <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">품번/품명</td><td style="border:1px solid #cbd5e1; padding:8px;" colspan="3">${b.item}</td></tr>
-                            <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">수량</td><td class="text-right" style="border:1px solid #cbd5e1; padding:8px;"><strong>${parseInt(b.qty).toLocaleString()} 개</strong></td><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">단가 / 공급액</td><td class="text-right" style="border:1px solid #cbd5e1; padding:8px;">₩${price.toLocaleString()} / <strong>₩${totalAmt.toLocaleString()}</strong></td></tr>
-                            <tr><td style="background:#f1f5f9; font-weight:bold; border:1px solid #cbd5e1; padding:8px;">LOT번호</td><td colspan="3" style="border:1px solid #cbd5e1; padding:8px;"><strong>${b.lot}</strong></td></tr>
-                        </table>
-                        <p style="font-size:11px; color:#64748b; margin-top:15px; text-align:center;">위 물품을 정히 공급합니다. (장운산업 전산 인쇄본)</p>
-                    </div>`;
-            };
-
-            window.printStatement = function() {
-                const tz = document.getElementById("pdf-target-zone");
-                if(!tz) { alert("목록에서 [양식 보기]를 먼저 눌러주세요."); return; }
-                const orig = document.body.innerHTML; document.body.innerHTML = "<div style='padding:40px; background:white;'>" + tz.innerHTML + "</div>"; window.print(); document.body.innerHTML = orig; window.location.reload();
-            };
-            window.downloadStatementPDF = function() {
-                const tz = document.getElementById("pdf-target-zone");
-                if(!tz) { alert("목록에서 [양식 보기]를 먼저 눌러주세요."); return; }
-                html2pdf().set({ margin: 1, filename: `거래명세표_${Date.now()}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(tz).save();
-            };
-
-            // 🛑 시스템관리 - 설비정지 CODE 마스터 로직
-            window.submitStopCode = function(event) {
-                e = event || window.event; e.preventDefault();
-                const code = document.getElementById("stopCodeId").value;
-                const name = document.getElementById("stopCodeName").value;
-                if(stopCodeData.find(c => c.code === code)) { alert("이미 등록된 CODE 번호입니다."); return; }
-                stopCodeData.push({ code: code, name: name });
-                localStorage.setItem('erpStopCodes', JSON.stringify(stopCodeData));
-                document.getElementById("stopCodeId").value = ""; document.getElementById("stopCodeName").value = "";
-                alert("설비정지 CODE 마스터가 등록되었습니다.");
-                refreshAllTables();
-            };
-            window.deleteStopCode = function(code) {
-                if(confirm(`CODE [${code}]를 정말 삭제하시겠습니까?`)) {
-                    stopCodeData = stopCodeData.filter(c => c.code !== code);
-                    localStorage.setItem('erpStopCodes', JSON.stringify(stopCodeData));
-                    refreshAllTables();
-                }
-            };
-            function renderStopCodeTable() {
-                const tbody = document.getElementById("stopCodeTableBody"); if(!tbody) return; tbody.innerHTML = "";
-                stopCodeData.forEach(c => {
-                    tbody.innerHTML += `<tr><td><strong>${c.code}</strong></td><td>${c.name}</td><td><button class="btn-mini btn-reject" onclick="deleteStopCode('${c.code}')">삭제</button></td></tr>`;
-                });
-            }
-
-            // 🛑 생산 - 설비정지 로직
             window.submitProdLoss = function(event) {
                 e = event || window.event; e.preventDefault();
-                prodLossData.push({
-                    machine: document.getElementById("prodLossMachine").value,
-                    code: document.getElementById("prodLossCode").value,
-                    start: document.getElementById("prodLossStart").value,
-                    end: document.getElementById("prodLossEnd").value,
-                    reason: document.getElementById("prodLossReason").value,
-                    date: document.getElementById("prodLossDate").value
-                });
-                localStorage.setItem('erpProdLoss', JSON.stringify(prodLossData));
-                alert("사출 라인 설비정지 내역이 등록되었습니다.");
-                refreshAllTables();
+                prodLossData.push({ machine: document.getElementById("prodLossMachine").value, code: document.getElementById("prodLossCode").value, start: document.getElementById("prodLossStart").value, end: document.getElementById("prodLossEnd").value, reason: document.getElementById("prodLossReason").value, date: document.getElementById("prodLossDate").value });
+                saveData('erpProdLoss', prodLossData); alert("설비유실 등록 완료"); refreshAllTables();
             };
-            function renderProdLossTable() {
-                const tbody = document.getElementById("prodLossTableBody"); if(!tbody) return; tbody.innerHTML = "";
-                prodLossData.forEach(l => {
-                    tbody.innerHTML += `<tr><td>${l.date}</td><td><strong>${l.machine}</strong></td><td>${l.code}</td><td>${l.start} ~ ${l.end}</td><td><span style="color:#dc2626;">${l.reason}</span></td></tr>`;
-                });
-            }
 
-            // 📢 게시판 공지사항 로직
+            window.submitStopCode = function(event) {
+                e = event || window.event; e.preventDefault(); const code = document.getElementById("stopCodeId").value; const name = document.getElementById("stopCodeName").value;
+                if(stopCodeData.find(c => c.code === code)) { alert("중복 코드!"); return; }
+                stopCodeData.push({ code: code, name: name }); saveData('erpStopCodes', stopCodeData);
+                document.getElementById("stopCodeId").value = ""; document.getElementById("stopCodeName").value = "";
+                alert("CODE 등록 완료"); refreshAllTables();
+            };
+            window.deleteStopCode = function(code) { if(confirm("삭제하시겠습니까?")) { stopCodeData = stopCodeData.filter(c => c.code !== code); saveData('erpStopCodes', stopCodeData); refreshAllTables(); } };
+
+            window.toggleNoticeForm = function() { const f = document.getElementById("noticeFormContainer"); f.style.display = f.style.display === "none" ? "block" : "none"; };
             window.submitNotice = function(event) {
                 e = event || window.event; e.preventDefault();
-                noticeData.push({
-                    id: Date.now(),
-                    type: document.getElementById("noticeType").value,
-                    title: document.getElementById("noticeTitle").value,
-                    author: loggedInUser ? loggedInUser.name : "관리자",
-                    date: document.getElementById("noticeDate").value
-                });
-                localStorage.setItem('erpNotices', JSON.stringify(noticeData));
-                alert("사내 공지사항이 등록되었습니다."); document.getElementById("noticeTitle").value = "";
-                refreshAllTables();
+                noticeData.push({ id: Date.now(), type: document.getElementById("noticeType").value, title: document.getElementById("noticeTitle").value, author: loggedInUser ? loggedInUser.name : "관리자", date: document.getElementById("noticeDate").value });
+                saveData('erpNotices', noticeData); alert("공지 등록 완료"); document.getElementById("noticeTitle").value = ""; toggleNoticeForm(); refreshAllTables();
             };
-            window.deleteNotice = function(id) {
-                if(confirm("이 게시물을 삭제하시겠습니까?")) {
-                    noticeData = noticeData.filter(n => n.id !== id);
-                    localStorage.setItem('erpNotices', JSON.stringify(noticeData)); refreshAllTables();
-                }
-            };
+            window.deleteNotice = function(id) { if(confirm("삭제하시겠습니까?")) { noticeData = noticeData.filter(n => n.id !== id); saveData('erpNotices', noticeData); refreshAllTables(); } };
+            
             window.renderNoticeTable = function() {
                 const tbody = document.getElementById("noticeTableBody"); if(!tbody) return; tbody.innerHTML = "";
                 const filter = document.getElementById("filterNotice") ? document.getElementById("filterNotice").value : "";
-                
-                // 최신순 정렬
                 const sorted = [...noticeData].sort((a,b) => b.id - a.id);
                 sorted.forEach(n => {
                     if(filter === "" || n.title.includes(filter)) {
@@ -1281,12 +771,9 @@
                         tbody.innerHTML += `<tr><td><span class="notice-badge" style="background:${bColor};">${n.type}</span></td><td><strong>${n.title}</strong></td><td>${n.author}</td><td>${n.date}</td><td><button class="btn-mini btn-reject" onclick="deleteNotice(${n.id})">삭제</button></td></tr>`;
                     }
                 });
-
-                // 홈 대시보드 연동
                 const homeArea = document.getElementById("homeNoticeArea");
                 if(homeArea) {
-                    homeArea.innerHTML = "";
-                    if(sorted.length === 0) homeArea.innerHTML = "등록된 공지사항이 없습니다.";
+                    homeArea.innerHTML = ""; if(sorted.length === 0) homeArea.innerHTML = "등록된 공지사항이 없습니다.";
                     sorted.slice(0, 5).forEach(n => {
                         let bColor = n.type === "필독" ? "#dc2626" : (n.type === "공지" ? "#2563eb" : "#475569");
                         homeArea.innerHTML += `<div class="notice-item"><span class="notice-badge" style="background:${bColor};">${n.type}</span><span><strong>[${n.author}]</strong> ${n.title}</span></div>`;
@@ -1294,188 +781,121 @@
                 }
             };
 
-            // 🚨 달력 일일 이슈 로직
             window.submitIssue = function(event) {
                 e = event || window.event; e.preventDefault();
-                issueData.push({
-                    id: Date.now(),
-                    date: document.getElementById("issueDate").value,
-                    content: document.getElementById("issueContent").value
-                });
-                localStorage.setItem('erpIssues', JSON.stringify(issueData));
-                alert("해당 날짜에 이슈가 등록되었습니다."); document.getElementById("issueContent").value = "";
-                refreshAllTables();
+                issueData.push({ id: Date.now(), date: document.getElementById("issueDate").value, content: document.getElementById("issueContent").value });
+                saveData('erpIssues', issueData); alert("달력 이슈 등록 완료"); document.getElementById("issueContent").value = ""; refreshAllTables();
             };
 
-            document.getElementById("sysItemForm").addEventListener("submit", function(e) {
-                e.preventDefault(); const pType = document.getElementById("sysItemPriceType").value; const isFree = (pType === "무상사급");
-                const newItem = { id: document.getElementById("sysItemCode").value, name: document.getElementById("sysItemName").value, type: document.getElementById("sysItemType").value, price: isFree ? 0 : (parseInt(document.getElementById("sysItemPrice").value) || 0), vendor: document.getElementById("sysItemVendor").value, isFree: isFree };
-                if(defaultItems.find(i => i.id === newItem.id)) { alert("존재하는 품번입니다!"); return; }
-                defaultItems.push(newItem); localStorage.setItem('erpItems', JSON.stringify(defaultItems)); alert("등록 성공!"); document.getElementById("sysItemForm").reset(); refreshAllTables();
-            });
+            window.submitBill = function(event) {
+                let e = event || window.event; e.preventDefault(); let val = document.getElementById("billItem").value; let itm = getMasterItem(val); if(itm) val = `${itm.id} (${itm.name})`;
+                billData.push({ id: Date.now(), date: document.getElementById("billDate").value, item: val, vendor: document.getElementById("billVendor").value, qty: document.getElementById("billQty").value, lot: document.getElementById("billLot").value });
+                saveData('erpBills', billData); refreshAllTables(); alert("명세표 등록 완료");
+            };
 
-            document.getElementById("sysCarForm").addEventListener("submit", function(e) {
-                e.preventDefault(); const newCar = { no: document.getElementById("sysCarNo").value, type: document.getElementById("sysCarType").value, ton: document.getElementById("sysCarTon").value, makeDate: document.getElementById("sysCarMakeDate").value, buyDate: document.getElementById("sysCarBuyDate").value, name: `장운 ${carMasterData.length + 1}호차` };
-                if(carMasterData.find(c => c.no === newCar.no)) { alert("존재하는 번호!"); return; }
-                carMasterData.push(newCar); localStorage.setItem('erpCarsMaster', JSON.stringify(carMasterData)); alert("차량 등록 성공!"); document.getElementById("sysCarForm").reset(); refreshAllTables();
-            });
+            window.renderAssemDash = function(lineType) {
+                let prefix = lineType === 'KA4' ? 'ka4' : 'ybpe'; const grid = document.getElementById(`${prefix}CalendarGrid`); if(!grid) return; grid.innerHTML = "";
+                const selectedMonth = parseInt(document.getElementById(`${prefix}MonthSelect`).value) || 6;
+                ["일","월","화","수","목","금","토"].forEach(w => grid.innerHTML += `<div class="calendar-day-header">${w}</div>`);
+                const firstDayIdx = new Date(2026, selectedMonth - 1, 1).getDay(); for(let i = 0; i < firstDayIdx; i++) grid.innerHTML += `<div class="calendar-cell empty"></div>`;
+                const daysMap = {1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31}; const totalDays = daysMap[selectedMonth];
+                let monthlyLossTime = 0;
+                for(let d = 1; d <= totalDays; d++) {
+                    const dateStr = `2026-${String(selectedMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    let dayProdQty = 0; assemProdData[lineType].forEach(p => { if(p.date === dateStr) dayProdQty += parseInt(p.qty); });
+                    let dayLossHours = 0; assemLossData[lineType].forEach(l => { if(l.date === dateStr) { let hrs = calcHoursDiff(l.start, l.end); dayLossHours += hrs; monthlyLossTime += hrs; } });
+                    let prodHtml = dayProdQty > 0 ? `<div class="cal-assem-prod">생산: ${dayProdQty}개</div>` : "";
+                    let lossHtml = dayLossHours > 0 ? `<div class="cal-assem-loss">유실: ${dayLossHours.toFixed(1)}H</div>` : "";
+                    grid.innerHTML += `<div class="calendar-cell"><div class="day-num">${d}</div>${prodHtml}${lossHtml}</div>`;
+                }
+                const BASE = 240; let opTime = BASE - monthlyLossTime;
+                document.getElementById(`${prefix}StatTotalTime`).innerText = `${opTime.toFixed(1)} 시간`; document.getElementById(`${prefix}StatLossTime`).innerText = `${monthlyLossTime.toFixed(1)} 시간`;
+                document.getElementById(`${prefix}StatOpRate`).innerText = `${((opTime / BASE) * 100).toFixed(1)} %`; document.getElementById(`${prefix}StatLossRate`).innerText = `${((monthlyLossTime / BASE) * 100).toFixed(1)} %`;
+            };
 
-            function renderSysItemTable() {
-                const tbody = document.getElementById("sysItemTableBody"); if(!tbody) return; tbody.innerHTML = "";
-                const matTbody = document.getElementById("matViewTableBody"); if(matTbody) matTbody.innerHTML = "";
-                defaultItems.forEach(item => {
-                    let pStr = item.isFree ? '<span style="color:#2563eb;">무상사급</span>' : `${item.price.toLocaleString()} 원`;
-                    tbody.innerHTML += `<tr><td><span class="badge" style="background:#475569;">${item.type}</span></td><td><strong>${item.id}</strong></td><td>${item.name}</td><td>${item.vendor || '-'}</td><td class="text-right">${pStr}</td></tr>`;
-                    if(matTbody && ["원재료","자재","부자재"].includes(item.type)) { matTbody.innerHTML += `<tr><td><strong>${item.id}</strong></td><td>${item.name}</td><td><span class="badge" style="background:#475569;">${item.type}</span></td><td class="text-right">${pStr}</td></tr>`; }
-                });
-            }
+            window.renderProdDash = function() {
+                const grid = document.getElementById("prodCalendarGrid"); if(!grid) return; grid.innerHTML = "";
+                const selectedMonth = parseInt(document.getElementById("prodMonthSelect").value) || 6;
+                ["일","월","화","수","목","금","토"].forEach(w => grid.innerHTML += `<div class="calendar-day-header">${w}</div>`);
+                const firstDayIdx = new Date(2026, selectedMonth - 1, 1).getDay(); for(let i = 0; i < firstDayIdx; i++) grid.innerHTML += `<div class="calendar-cell empty"></div>`;
+                const daysMap = {1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31}; const totalDays = daysMap[selectedMonth];
+                let monthlyLossTime = 0;
+                for(let d = 1; d <= totalDays; d++) {
+                    const dateStr = `2026-${String(selectedMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    let dayProdQty = 0; reportData.forEach(p => { if(p.date === dateStr) dayProdQty += parseInt(p.qty); });
+                    let dayLossHours = 0; prodLossData.forEach(l => { if(l.date === dateStr) { let hrs = calcHoursDiff(l.start, l.end); dayLossHours += hrs; monthlyLossTime += hrs; } });
+                    let prodHtml = dayProdQty > 0 ? `<div class="cal-assem-prod">생산: ${dayProdQty}개</div>` : "";
+                    let lossHtml = dayLossHours > 0 ? `<div class="cal-assem-loss">정지: ${dayLossHours.toFixed(1)}H</div>` : "";
+                    grid.innerHTML += `<div class="calendar-cell"><div class="day-num">${d}</div>${prodHtml}${lossHtml}</div>`;
+                }
+                const BASE = 240; let opTime = BASE - monthlyLossTime;
+                document.getElementById("prodStatTotalTime").innerText = `${opTime.toFixed(1)} 시간`; document.getElementById("prodStatLossTime").innerText = `${monthlyLossTime.toFixed(1)} 시간`;
+                document.getElementById("prodStatOpRate").innerText = `${((opTime / BASE) * 100).toFixed(1)} %`; document.getElementById("prodStatLossRate").innerText = `${((monthlyLossTime / BASE) * 100).toFixed(1)} %`;
+            };
 
-            function renderSysCarTable() {
-                const tbody = document.getElementById("sysCarTableBody"); if(!tbody) return; tbody.innerHTML = "";
-                carMasterData.forEach(c => { tbody.innerHTML += `<tr><td><strong>${c.name} (${c.no})</strong></td><td>${c.type}</td><td>${c.ton}</td><td>${c.makeDate}</td><td>${c.buyDate}</td></tr>`; });
-            }
-
-            function renderCarTable() {
-                const tbody = document.getElementById("carTableBody"); if(!tbody) return; tbody.innerHTML = "";
-                carData.forEach(c => {
-                    const sum = c.oil + c.repair + c.etc;
-                    tbody.innerHTML += `<tr><td>${c.date}</td><td><strong>${c.car}</strong></td><td class="text-right">${c.oil.toLocaleString()}</td><td class="text-right">${c.repair.toLocaleString()}</td><td class="text-right">${c.etc.toLocaleString()}</td><td class="text-right" style="font-weight:bold; color:#dc2626;">${sum.toLocaleString()} 원</td></tr>`;
-                });
-            }
-
-            document.getElementById("carForm").addEventListener("submit", function(e) {
-                e.preventDefault();
-                let carVal = document.getElementById("carSelectInput").value;
-                let car = getMasterCar(carVal); if(car) carVal = `${car.name} (${car.no})`;
-
-                carData.push({ 
-                    car: carVal, 
-                    oil:parseInt(document.getElementById("carOil").value)||0, 
-                    repair:parseInt(document.getElementById("carRepair").value)||0, 
-                    etc:parseInt(document.getElementById("carEtc").value)||0, 
-                    date:document.getElementById("carDate").value 
-                });
-                localStorage.setItem('erpCars', JSON.stringify(carData)); 
-                refreshAllTables(); 
-                alert("차량 유지비용 지출 내역 기록 완료");
-            });
-
-            // 홈 장운산업달력 렌더링 (매출/매입 및 이슈 연동)
             window.renderCalendar = function() {
                 const grid = document.getElementById("calendarGrid"); if(!grid) return; grid.innerHTML = "";
                 const selectedMonth = parseInt(document.getElementById("monthSelect").value) || 6;
-
-                const weeks = ["일", "월", "화", "수", "목", "금", "토"];
-                weeks.forEach((w, i) => {
-                    let c = "calendar-day-header"; if(i===0) c+=" sun"; if(i===6) c+=" sat";
-                    grid.innerHTML += `<div class="${c}">${w}</div>`;
-                });
-                
-                const daysMap = {1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31};
-                const totalDays = daysMap[selectedMonth];
-                const firstDayIdx = new Date(2026, selectedMonth - 1, 1).getDay();
-
-                for(let i = 0; i < firstDayIdx; i++) grid.innerHTML += `<div class="calendar-cell empty"></div>`;
-
+                ["일","월","화","수","목","금","토"].forEach(w => grid.innerHTML += `<div class="calendar-day-header">${w}</div>`);
+                const firstDayIdx = new Date(2026, selectedMonth - 1, 1).getDay(); for(let i = 0; i < firstDayIdx; i++) grid.innerHTML += `<div class="calendar-cell empty"></div>`;
+                const daysMap = {1:31, 2:28, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31}; const totalDays = daysMap[selectedMonth];
                 for(let d = 1; d <= totalDays; d++) {
-                    const dow = new Date(2026, selectedMonth - 1, d).getDay();
-                    let c = "calendar-cell"; if(dow === 0) c += " sun"; if(dow === 6) c += " sat";
-                    
                     const dateString = `2026-${String(selectedMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                    
-                    let dayBuy = 0;
-                    buyData.forEach(b => {
-                        if(b.date === dateString) {
-                            const itmId = b.id.split(' ')[0];
-                            const itm = defaultItems.find(item => item.id === itmId);
-                            const price = itm ? itm.price : 0;
-                            dayBuy += (b.qty * price);
-                        }
-                    });
-
-                    let daySell = 0;
-                    shipData.forEach(s => {
-                        if(s.date === dateString) {
-                            const itmId = s.id.split(' ')[0];
-                            const itm = defaultItems.find(item => item.id === itmId);
-                            const price = itm ? itm.price : 0;
-                            daySell += (s.qty * price);
-                        }
-                    });
-
-                    let buyText = dayBuy > 0 ? `<div class="cal-price-buy">매입: ${dayBuy.toLocaleString()}원</div>` : "";
-                    let sellText = daySell > 0 ? `<div class="cal-price-sell">매출: ${daySell.toLocaleString()}원</div>` : "";
-
-                    // 🚨 이슈 연동
-                    let issueText = "";
-                    issueData.forEach(iss => {
-                        if(iss.date === dateString) {
-                            issueText += `<div class="cal-issue">🚨 ${iss.content}</div>`;
-                        }
-                    });
-
-                    grid.innerHTML += `
-                        <div class="${c}">
-                            <div class="day-num">${d}</div>
-                            ${buyText}
-                            ${sellText}
-                            ${issueText}
-                        </div>`;
+                    let dayBuy = 0; buyData.forEach(b => { if(b.date === dateString) { const itmId = b.id.split(' ')[0]; const itm = defaultItems.find(item => item.id === itmId); dayBuy += (b.qty * (itm ? itm.price : 0)); } });
+                    let daySell = 0; shipData.forEach(s => { if(s.date === dateString) { const itmId = s.id.split(' ')[0]; const itm = defaultItems.find(item => item.id === itmId); daySell += (s.qty * (itm ? itm.price : 0)); } });
+                    let buyText = dayBuy > 0 ? `<div class="cal-price-buy">매입:${dayBuy.toLocaleString()}원</div>` : "";
+                    let sellText = daySell > 0 ? `<div class="cal-price-sell">매출:${daySell.toLocaleString()}원</div>` : "";
+                    let issueText = ""; issueData.forEach(iss => { if(iss.date === dateString) issueText += `<div class="cal-issue">🚨 ${iss.content}</div>`; });
+                    grid.innerHTML += `<div class="calendar-cell"><div class="day-num">${d}</div>${buyText}${sellText}${issueText}</div>`;
                 }
             };
 
             function refreshAllTables() {
-                initSelectBoxes(); initAttEmpSelect();
-                renderSysItemTable(); renderSysCarTable(); renderEmpTable();
-                renderStopCodeTable(); renderNoticeTable();
-                
-                renderCalendar(); 
-                
-                renderBuyTable();
-                renderBasicLog(gscWorkData, 'gscWorkTableBody'); renderBasicLog(gscShipData, 'gscShipTableBody');
+                renderSysItemTable(); renderSysCarTable(); renderEmpTable(); renderStopCodeTable(); renderNoticeTable();
+                renderCalendar(); renderBuyTable(); renderBasicLog(gscWorkData, 'gscWorkTableBody'); renderBasicLog(gscShipData, 'gscShipTableBody');
                 renderBasicLog(packWorkData, 'packWorkTableBody'); renderBasicLog(packShipData, 'packShipTableBody');
-                renderShipTable(); renderBillTable(); renderCarTable();
-                renderProdLossTable();
-                
-                const tBody = document.getElementById("myAttTableBody");
-                if(tBody && loggedInUser) {
-                    tBody.innerHTML = ""; attendanceData.filter(a => a.regById === loggedInUser.id).forEach(r => { let bColor = r.status==="1차 승인"?"badge-1st":r.status==="최종 승인"?"badge-approved":r.status==="반려"?"badge-rejected":"badge-waiting"; tBody.innerHTML += `<tr><td>${r.date}</td><td>${r.name}</td><td><strong>${r.type}</strong></td><td class="text-right">${r.overtime>0?r.overtime+"H":"-"}</td><td><span class="badge ${bColor}">${r.status}</span></td></tr>`; });
-                }
-
-                const gBody = document.getElementById("globalAttTableBody");
-                if(gBody && loggedInUser) {
-                    gBody.innerHTML = ""; const filterDept = document.getElementById("attFilterDept").value;
-                    attendanceData.forEach((a) => {
-                        if(filterDept !== "전체" && a.dept !== filterDept) return;
-                        let bColor = a.status==="1차 승인"?"badge-1st":a.status==="최종 승인"?"badge-approved":a.status==="반려"?"badge-rejected":"badge-waiting";
-                        let actionCol = "-";
-                        if(a.status === "대기" && (loggedInUser.role === "admin" || (loggedInUser.role === "chajang" && loggedInUser.dept === a.dept))) { actionCol = `<button class="btn-mini btn-1st" onclick="processAttendance(${a.id}, '1차 승인')">1차 승인</button><button class="btn-mini btn-reject" onclick="processAttendance(${a.id}, '반려')">반려</button>`; } 
-                        else if(a.status === "1차 승인" && (loggedInUser.role === "admin" || loggedInUser.role === "hr")) { actionCol = `<button class="btn-mini btn-approve" onclick="processAttendance(${a.id}, '최종 승인')">최종 승인</button><button class="btn-mini btn-reject" onclick="processAttendance(${a.id}, '반려')">반려</button>`; }
-                        gBody.innerHTML += `<tr><td>${a.date}</td><td><span style="font-weight:bold; color:#1e3a8a;">${a.dept}</span></td><td>${a.name}</td><td><strong>${a.type}</strong></td><td class="text-right">${a.overtime>0?a.overtime+"H":"-"}</td><td><span class="badge ${bColor}">${a.status}</span></td><td>${actionCol}</td></tr>`;
-                    });
-                }
-                
-                const attGrid = document.getElementById("attendanceCalendarGrid");
-                if(attGrid) {
-                    attGrid.innerHTML = ""; const fd = document.getElementById("attFilterDept").value;
-                    ["일","월","화","수","목","금","토"].forEach(w => attGrid.innerHTML+=`<div class="calendar-day-header">${w}</div>`);
-                    for(let i=0; i<1; i++) attGrid.innerHTML+=`<div class="calendar-cell empty"></div>`;
-                    for(let d=1; d<=30; d++) {
-                        const ds = `2026-06-${String(d).padStart(2,'0')}`; let cnt=0;
-                        attendanceData.forEach(a => { if(a.date === ds && a.status === "최종 승인" && ["출근","지각","조퇴"].includes(a.type) && (fd==="전체"||a.dept===fd)) cnt++; });
-                        let dh = cnt>0 ? (fd==="전체" ? `<div class="cal-att-count">총 출근 ${cnt}명</div>` : `<div class="cal-att-count" style="background:#dbeafe; color:#2563eb;">${fd} ${cnt}명</div>`) : "";
-                        attGrid.innerHTML += `<div class="calendar-cell" style="min-height:75px;"><div class="day-num">${d}</div>${dh}</div>`;
-                    }
-                }
+                renderShipTable(); renderBillTable(); renderCarTable(); renderProdLossTable(); renderProdDash();
             }
-            window.processAttendance = function(id, st) { const idx = attendanceData.findIndex(a=>a.id===id); if(idx>-1){ attendanceData[idx].status=st; localStorage.setItem('erpAttendance', JSON.stringify(attendanceData)); refreshAllTables(); } };
-            window.onDeptFilterChange = function() { refreshAllTables(); };
-            
-            // 🌐 라우팅 
-            const sections = ["section-dash", "section-board-notice", "section-mat-view", "section-mat-stock", "section-mat-buy", "section-equip-reg", "section-equip-list", "section-buy", "section-plan", "section-direct", "section-report", "section-prod-loss", "section-mold", "section-assem-hvac-dash", "section-assem-hvac-prod", "section-assem-hvac-loss", "section-assem-ybpe-dash", "section-assem-ybpe-prod", "section-assem-ybpe-loss", "section-gsc-work", "section-gsc-ship", "section-pack-work", "section-pack-ship", "section-ship-report", "section-ship-schedule", "section-ship-car", "section-ship-bill", "section-quality", "section-system", "section-sys-item", "section-sys-car", "section-sys-emp", "section-sys-code", "section-att-reg", "section-att-list"];
+
+            // 기존 공용 인터페이스 로직 그대로 유지
+            document.getElementById("sysItemForm").addEventListener("submit", function(e) {
+                e.preventDefault(); const pType = document.getElementById("sysItemPriceType").value; const isFree = (pType === "무상사급");
+                const newItem = { id: document.getElementById("sysItemCode").value, name: document.getElementById("sysItemName").value, type: document.getElementById("sysItemType").value, price: isFree ? 0 : (parseInt(document.getElementById("sysItemPrice").value) || 0), vendor: document.getElementById("sysItemVendor").value, isFree: isFree };
+                defaultItems.push(newItem); saveData('erpItems', defaultItems); alert("품목 등록 성공!"); document.getElementById("sysItemForm").reset(); refreshAllTables();
+            });
+            document.getElementById("sysCarForm").addEventListener("submit", function(e) {
+                e.preventDefault(); const newCar = { no: document.getElementById("sysCarNo").value, type: document.getElementById("sysCarType").value, ton: document.getElementById("sysCarTon").value, makeDate: document.getElementById("sysCarMakeDate").value, buyDate: document.getElementById("sysCarBuyDate").value, name: `장운 ${carMasterData.length + 1}호차` };
+                carMasterData.push(newCar); saveData('erpCarsMaster', carMasterData); alert("차량 등록 성공!"); document.getElementById("sysCarForm").reset(); refreshAllTables();
+            });
+
+            document.getElementById("buyForm").addEventListener("submit", function(e) { e.preventDefault(); let val = document.getElementById("buyItemInput").value; let itm = getMasterItem(val); if(itm) val = `${itm.id} (${itm.name})`; buyData.push({ bClass:document.getElementById("buyClass").value, company:document.getElementById("buyCompany").value, id:val, qty:parseInt(document.getElementById("buyQty").value)||0, date:document.getElementById("buyDate").value, lot:document.getElementById("buyLot").value }); saveData('erpBuys', buyData); refreshAllTables(); alert("입고 완료"); });
+            document.getElementById("equipForm").addEventListener("submit", function(e) { e.preventDefault(); let val = document.getElementById("eqItemInput").value; let itm = getMasterItem(val); if(itm) val = `${itm.id} (${itm.name})`; equipData.push({ id: Date.now(), factory: document.getElementById("eqFactory").value, dept: document.getElementById("eqDept").value, item: val, vendor: document.getElementById("eqVendor").value, price: parseInt(document.getElementById("eqPrice").value) || 0, qty: parseInt(document.getElementById("eqQty").value) || 1, date: document.getElementById("eqDate").value }); saveData('erpEquip', equipData); refreshAllTables(); alert("비품 등록 완료"); });
+            document.getElementById("shipForm").addEventListener("submit", function(e) { e.preventDefault(); let itemVal = document.getElementById("shipItemInput").value; let carVal = document.getElementById("shipCarInput").value; let itm = getMasterItem(itemVal); if(itm) itemVal = `${itm.id} (${itm.name})`; let car = getMasterCar(carVal); if(car) carVal = `${car.name} (${car.no})`; shipData.push({ company: document.getElementById("shipCompany").value, id: itemVal, price: itm && itm.isFree ? 0 : (itm ? itm.price : 0), qty: parseInt(document.getElementById("shipQty").value)||0, lot: document.getElementById("shipLot").value, date: document.getElementById("shipDate").value, boxName: document.getElementById("shipBoxName").value, carNo: carVal }); saveData('erpShips', shipData); refreshAllTables(); alert("출하 확정 완료"); });
+            document.getElementById("planForm").addEventListener("submit", function(e) { e.preventDefault(); let inputVal = document.getElementById("planItemInput").value; let itm = getMasterItem(inputVal); if(itm) inputVal = `${itm.id} (${itm.name})`; planData.push({ machine:document.getElementById("planMachine").value, id:inputVal, qty:parseInt(document.getElementById("planQty").value), date:document.getElementById("planDate").value }); saveData('erpPlans', planData); refreshAllTables(); alert("계획 수립 완료"); });
+            document.getElementById("directForm").addEventListener("submit", function(e) { e.preventDefault(); let inputVal = document.getElementById("directItemInput").value; let itm = getMasterItem(inputVal); if(itm) inputVal = `${itm.id} (${itm.name})`; directData.push({ machine:document.getElementById("directMachine").value, id:inputVal, qty:parseInt(document.getElementById("directQty").value), date:document.getElementById("directDate").value }); saveData('erpDirects', directData); refreshAllTables(); alert("지시서 발행 완료"); });
+            document.getElementById("reportForm").addEventListener("submit", function(e) { e.preventDefault(); let inputVal = document.getElementById("reportItemInput").value; let itm = getMasterItem(inputVal); if(itm) inputVal = `${itm.id} (${itm.name})`; reportData.push({ machine:document.getElementById("reportMachine").value, id:inputVal, qty:parseInt(document.getElementById("reportQty").value), badQty:parseInt(document.getElementById("reportBadQty").value)||0, date:document.getElementById("reportDate").value }); saveData('erpReports', reportData); refreshAllTables(); alert("기록 완료"); });
+            document.getElementById("moldForm").addEventListener("submit", function(e) { e.preventDefault(); moldData.push({ id: Date.now(), moldId: document.getElementById("moldId").value, inDate: document.getElementById("moldInDate").value, repair: document.getElementById("moldRepair").value, wash: document.getElementById("moldWash").value, logDate: document.getElementById("moldLogDate").value }); saveData('erpMolds', moldData); refreshAllTables(); alert("금형 반영 완료"); });
+
+            function renderSysItemTable() { const tbody = document.getElementById("sysItemTableBody"); if(!tbody) return; tbody.innerHTML = ""; const matTbody = document.getElementById("matViewTableBody"); if(matTbody) matTbody.innerHTML = ""; defaultItems.forEach(item => { let pStr = item.isFree ? '무상사급' : `${item.price.toLocaleString()} 원`; tbody.innerHTML += `<tr><td><span class="badge" style="background:#475569;">${item.type}</span></td><td><strong>${item.id}</strong></td><td>${item.name}</td><td>${item.vendor || '-'}</td><td class="text-right">${pStr}</td></tr>`; if(matTbody && ["원재료","자재","부자재"].includes(item.type)) { matTbody.innerHTML += `<tr><td><strong>${item.id}</strong></td><td>${item.name}</td><td><span class="badge" style="background:#475569;">${item.type}</span></td><td class="text-right">${pStr}</td></tr>`; } }); }
+            function renderSysCarTable() { const tbody = document.getElementById("sysCarTableBody"); if(!tbody) return; tbody.innerHTML = ""; carMasterData.forEach(c => { tbody.innerHTML += `<tr><td><strong>${c.name} (${c.no})</strong></td><td>${c.type}</td><td>${c.ton}</td><td>${c.makeDate}</td><td>${c.buyDate}</td></tr>`; }); }
+            function renderBuyTable() { const tbody = document.getElementById("buyTableBody"); if(!tbody) return; tbody.innerHTML = ""; buyData.forEach(b => { let itmId = b.id.split(' ')[0]; let itm = defaultItems.find(i => i.id === itmId); tbody.innerHTML += `<tr><td>${b.date}</td><td>${b.bClass}</td><td>${b.company}</td><td>${b.id}</td><td class="text-right">${(itm && itm.isFree)?'무상':(itm?itm.price:0)}</td><td class="text-right">${b.qty}</td><td>${b.lot}</td></tr>` }); }
+            window.renderEquipList = function() { const lBody = document.getElementById("equipListTableBody"); const rBody = document.getElementById("equipRecentTableBody"); if(rBody) rBody.innerHTML = ""; if(lBody) lBody.innerHTML = ""; const fFac = document.getElementById("eqFilterFac")?document.getElementById("eqFilterFac").value:"전체"; const fDept = document.getElementById("eqFilterDept")?document.getElementById("eqFilterDept").value:"전체"; let sum = 0; equipData.forEach(eq => { let tot = eq.price * eq.qty; if(rBody) rBody.innerHTML += `<tr><td>${eq.date}</td><td>${eq.factory}-${eq.dept}</td><td>${eq.item}</td><td class="text-right">${tot.toLocaleString()} 원</td></tr>`; if((fFac==="전체"||eq.factory===fFac) && (fDept==="전체"||eq.dept===fDept)) { sum+=tot; if(lBody) lBody.innerHTML += `<tr><td>${eq.date}</td><td><strong>${eq.factory}</strong></td><td>${eq.dept}</td><td>${eq.item}</td><td>${eq.vendor}</td><td class="text-right">${eq.price}</td><td class="text-right">${eq.qty}</td><td class="text-right">${tot.toLocaleString()} 원</td></tr>`; } }); if(document.getElementById("equipTotalSum")) document.getElementById("equipTotalSum").innerText = `${sum.toLocaleString()} 원`; };
+            window.toggleSysPriceInput = function() { const p = document.getElementById("sysItemPriceType").value; document.getElementById("sysItemPrice").disabled = p === "무상사급"; };
+
+            function updateInventoryTable() {
+                const tbody = document.getElementById("inventoryTableBody"); if(!tbody) return; tbody.innerHTML = "";
+                defaultItems.forEach(item => { if(item.type === '비품') return; let totalIn = 0, totalOut = 0;
+                    if(item.type === "완제품") { reportData.forEach(r => { if(r.id.startsWith(item.id)) totalIn += parseInt(r.qty-r.badQty); }); shipData.forEach(s => { if(s.id.startsWith(item.id)) totalOut += parseInt(s.qty); }); } 
+                    else { buyData.forEach(b => { if(b.id.startsWith(item.id)) totalIn += parseInt(b.qty); }); }
+                    tbody.innerHTML += `<tr><td><strong>${item.id}</strong></td><td>${item.name}</td><td>${item.type}</td><td class="text-right">${totalIn}</td><td class="text-right text-red">${totalOut}</td><td class="text-right"><strong>${totalIn - totalOut}</strong></td></tr>`;
+                });
+            }
+
+            // 라우팅 스위치 허브 엔진
+            const sections = ["section-dash", "section-board-notice", "section-mat-view", "section-mat-stock", "section-mat-buy", "section-equip-reg", "section-equip-list", "section-buy", "section-plan", "section-direct", "section-report", "section-prod-loss", "section-mold", "section-prod-dash", "section-assem-ka4-dash", "section-assem-ka4-prod", "section-assem-ka4-loss", "section-assem-ybpe-dash", "section-assem-ybpe-prod", "section-assem-ybpe-loss", "section-gsc-work", "section-gsc-ship", "section-pack-work", "section-pack-ship", "section-ship-report", "section-ship-schedule", "section-ship-car", "section-ship-bill", "section-quality", "section-system", "section-sys-item", "section-sys-car", "section-sys-emp", "section-sys-code", "section-att-reg", "section-att-list"];
             window.clearAllDisplay = function() { sections.forEach(s => { const el = document.getElementById(s); if(el) el.style.display="none"; }); ["boardSubNav", "matSubNav", "equipSubNav", "prodSubNav", "assemSubNav", "gscSubNav", "packSubNav", "salesSubNav", "attendanceSubNav", "systemSubNav"].forEach(n => { const el = document.getElementById(n); if(el) el.style.display = "none"; }); document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active")); }
             function bindMenu(id, action) { const el = document.getElementById(id); if(el) el.addEventListener("click", action); }
-            function bindSubMenu(map, parentNavId) { Object.keys(map).forEach(sid => { const el = document.getElementById(sid); if(el) { el.addEventListener("click", function() { document.querySelectorAll(`#${parentNavId} .sub-nav-item`).forEach(si => si.classList.remove("active")); this.classList.add("active"); sections.forEach(s => { const sec = document.getElementById(s); if(sec && s.startsWith("section-")) sec.style.display="none"; }); document.getElementById(parentNavId).style.display = "flex"; document.getElementById(map[sid]).style.display = "block"; if(sid==="sub-sys-item") renderSysItemTable(); if(sid==="sub-sys-car") renderSysCarTable(); if(sid==="sub-sys-emp") { renderEmpTable(); toggleEmpType(); } if(sid==="sub-sys-code") renderStopCodeTable(); if(sid==="sub-board-notice") renderNoticeTable(); }); } }); }
+            function bindSubMenu(map, parentNavId) { Object.keys(map).forEach(sid => { const el = document.getElementById(sid); if(el) { el.addEventListener("click", function() { document.querySelectorAll(`#${parentNavId} .sub-nav-item`).forEach(si => si.classList.remove("active")); this.classList.add("active"); sections.forEach(s => { const sec = document.getElementById(s); if(sec && s.startsWith("section-")) sec.style.display="none"; }); document.getElementById(parentNavId).style.display = "flex"; document.getElementById(map[sid]).style.display = "block"; if(sid==="sub-sys-item") renderSysItemTable(); if(sid==="sub-sys-car") renderSysCarTable(); if(sid==="sub-sys-emp") { renderEmpTable(); toggleEmpType(); } if(sid==="sub-sys-code") renderStopCodeTable(); if(sid==="sub-board-notice") renderNoticeTable(); if(sid==="sub-prod-dash") renderProdDash(); if(sid==="sub-ka4-dash") renderAssemDash('KA4'); if(sid==="sub-ybpe-dash") renderAssemDash('YB PE'); }); } }); }
 
             bindMenu("menu-dash", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-dash").style.display="block"; renderCalendar(); });
             bindMenu("menu-quality", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("section-quality").style.display="block"; });
@@ -1483,19 +903,19 @@
             bindMenu("menu-system", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("systemSubNav").style.display = "flex"; document.getElementById("sub-sys-item").classList.add("active"); document.getElementById("section-sys-item").style.display="block"; renderSysItemTable(); });
             bindMenu("menu-mat", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("matSubNav").style.display = "flex"; document.getElementById("sub-mat-raw").classList.add("active"); document.getElementById("section-mat-view").style.display = "block"; document.getElementById("matViewTitle").innerText = "원재료 품목 마스터 장부"; });
             bindMenu("menu-equip", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("equipSubNav").style.display = "flex"; document.getElementById("sub-equip-reg").classList.add("active"); document.getElementById("section-equip-reg").style.display = "block"; });
-            bindMenu("menu-prod", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("prodSubNav").style.display = "flex"; document.getElementById("sub-prod-plan").classList.add("active"); document.getElementById("section-plan").style.display = "block"; });
-            bindMenu("menu-assem", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("assemSubNav").style.display = "flex"; document.getElementById("sub-hvac-dash").classList.add("active"); document.getElementById("section-assem-hvac-dash").style.display = "block"; renderAssemDash('HVAC'); });
+            bindMenu("menu-prod", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("prodSubNav").style.display = "flex"; document.getElementById("sub-prod-dash").classList.add("active"); document.getElementById("section-prod-dash").style.display = "block"; renderProdDash(); });
+            bindMenu("menu-assem", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("assemSubNav").style.display = "flex"; document.getElementById("sub-ka4-dash").classList.add("active"); document.getElementById("section-assem-ka4-dash").style.display = "block"; renderAssemDash('KA4'); });
             bindMenu("menu-gsc", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("gscSubNav").style.display = "flex"; document.getElementById("sub-gsc-work").classList.add("active"); document.getElementById("section-gsc-work").style.display = "block"; });
             bindMenu("menu-pack", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("packSubNav").style.display = "flex"; document.getElementById("sub-pack-work").classList.add("active"); document.getElementById("section-pack-work").style.display = "block"; });
             bindMenu("menu-sales", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("salesSubNav").style.display = "flex"; document.getElementById("sub-ship-report").classList.add("active"); document.getElementById("section-ship-report").style.display = "block"; });
-            bindMenu("menu-attendance", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("attendanceSubNav").style.display = "flex"; if(loggedInUser && loggedInUser.role === 'jojang') { document.getElementById("sub-att-reg").classList.add("active"); document.getElementById("section-att-reg").style.display = "block"; toggleOvertimeField(); } else { document.getElementById("sub-att-list").classList.add("active"); document.getElementById("section-att-list").style.display = "block"; onDeptFilterChange(); } });
+            bindMenu("menu-attendance", function() { clearAllDisplay(); this.classList.add("active"); document.getElementById("attendanceSubNav").style.display = "flex"; if(loggedInUser && loggedInUser.role === 'jojang') { document.getElementById("sub-att-reg").classList.add("active"); document.getElementById("section-att-reg").style.display = "block"; } else { document.getElementById("sub-att-list").classList.add("active"); document.getElementById("section-att-list").style.display = "block"; } });
 
             bindSubMenu({ "sub-board-notice": "section-board-notice" }, "boardSubNav");
             bindSubMenu({ "sub-sys-item": "section-sys-item", "sub-sys-car": "section-sys-car", "sub-sys-emp": "section-sys-emp", "sub-sys-code": "section-sys-code" }, "systemSubNav");
             bindSubMenu({ "sub-mat-raw":"section-mat-view", "sub-mat-part":"section-mat-view", "sub-mat-sub":"section-mat-view", "sub-mat-buy":"section-mat-buy", "sub-mat-stock":"section-mat-stock" }, "matSubNav");
             bindSubMenu({ "sub-equip-reg":"section-equip-reg", "sub-equip-list":"section-equip-list" }, "equipSubNav");
-            bindSubMenu({ "sub-prod-plan":"section-plan", "sub-prod-direct":"section-direct", "sub-prod-report":"section-report", "sub-prod-loss":"section-prod-loss", "sub-prod-mold":"section-mold" }, "prodSubNav");
-            bindSubMenu({ "sub-hvac-dash": "section-assem-hvac-dash", "sub-hvac-prod": "section-assem-hvac-prod", "sub-hvac-loss": "section-assem-hvac-loss", "sub-ybpe-dash": "section-assem-ybpe-dash", "sub-ybpe-prod": "section-assem-ybpe-prod", "sub-ybpe-loss": "section-assem-ybpe-loss" }, "assemSubNav");
+            bindSubMenu({ "sub-prod-dash":"section-prod-dash", "sub-prod-plan":"section-plan", "sub-prod-direct":"section-direct", "sub-prod-report":"section-report", "sub-prod-loss":"section-prod-loss", "sub-prod-mold":"section-mold" }, "prodSubNav");
+            bindSubMenu({ "sub-ka4-dash": "section-assem-ka4-dash", "sub-ka4-prod": "section-assem-ka4-prod", "sub-ka4-loss": "section-assem-ka4-loss", "sub-ybpe-dash": "section-assem-ybpe-dash", "sub-ybpe-prod": "section-assem-ybpe-prod", "sub-ybpe-loss": "section-assem-ybpe-loss" }, "assemSubNav");
             bindSubMenu({ "sub-gsc-work": "section-gsc-work", "sub-gsc-ship": "section-gsc-ship" }, "gscSubNav");
             bindSubMenu({ "sub-pack-work": "section-pack-work", "sub-pack-ship": "section-pack-ship" }, "packSubNav");
             bindSubMenu({ "sub-ship-report":"section-ship-report", "sub-ship-schedule":"section-ship-schedule", "sub-ship-car":"section-ship-car", "sub-ship-bill":"section-ship-bill" }, "salesSubNav");
