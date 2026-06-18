@@ -33,7 +33,7 @@
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; height: fit-content; margin-bottom: 20px; }
         .card-title { font-size: 16px; font-weight: bold; color: #115e59; margin-bottom: 20px; border-left: 4px solid #0d9488; padding-left: 10px; display: flex; justify-content: space-between; align-items: center;}
         
-        /* 📈 대시보드 */
+        /* 📈 대시보드 (막대 그래프) */
         .dash-container { display: flex; gap: 20px; overflow-x: auto; padding: 10px 0; }
         .dash-dept-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; min-width: 120px; display: flex; flex-direction: column; align-items: center; }
         .dash-dept-name { font-size: 15px; font-weight: 900; color: #0f172a; margin-top: 15px; width: 100%; text-align: center; }
@@ -43,21 +43,28 @@
         .bar-val { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
         .bar-label { font-size: 10px; color: #64748b; font-weight: bold; margin-top: 4px; text-align: center;}
         
-        /* 📝 폼 스타일 */
+        /* 📝 폼 및 입력 컨트롤 */
         .form-control { display: flex; flex-direction: column; margin-bottom: 16px; }
         .form-control label { font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: bold; }
         .form-control input, .form-control select { padding: 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; width: 100%; }
         .form-control input:focus, .form-control select:focus { border-color: #0d9488; outline: none; box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+        .filter-box { display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
         
         .btn-submit { background-color: #0d9488; color: white; border: none; padding: 13px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.2s; }
         .btn-submit:hover { background-color: #0f766e; }
         .btn-danger { background-color: #ef4444; padding: 4px 8px; font-size: 11px; color: white; border: none; border-radius: 4px; cursor: pointer; }
         
         /* 📋 테이블 스타일 */
-        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; min-width: 500px; }
         th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; }
         th { background-color: #f8fafc; color: #475569; font-weight: bold; }
+        
+        /* 📊 주요 지표 카드 (직원 상세조회용) */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-card h3 { margin: 0 0 10px 0; font-size: 13px; color: #64748b; font-weight: bold; }
+        .stat-card .value { font-size: 26px; font-weight: 900; color: #0f172a; margin: 0; }
         
         .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; display: inline-block; }
         .badge-approved { background-color: #10b981; }
@@ -65,6 +72,7 @@
 </head>
 <body>
 
+    <!-- 🔐 로그인 섹션 -->
     <div id="login-section" class="login-wrapper">
         <div class="login-card">
             <div class="system-title">JW 장운산업</div>
@@ -83,28 +91,23 @@
         </div>
     </div>
 
+    <!-- ⚙️ 메인 공간 -->
     <div id="attendance-main-content">
         <div class="main-header">
             <h1 id="welcome-title">장운산업 근태 시스템</h1>
             <button class="btn-logout" id="btnLogout">로그아웃</button>
         </div>
 
+        <!-- 🧭 상단 네비게이션 메뉴 (요청하신 4개로 개편) -->
         <div class="erp-nav">
             <div class="nav-item active" id="menu-attendance">근태등록</div>
+            <div class="nav-item" id="menu-att-check">근태확인</div>
             <div class="nav-item" id="menu-emp-reg">직원등록</div>
             <div class="nav-item" id="menu-id-assign" style="display:none;">아이디부여(관리자용)</div>
         </div>
 
+        <!-- 1️⃣ 섹션: 근태 등록 -->
         <div id="section-attendance" class="erp-section" style="display:block;">
-            
-            <div class="card">
-                <div class="card-title">
-                    <span>📊 일일 부서별 근태 현황</span>
-                    <input type="date" id="dashDate" style="padding:6px 12px; border:2px solid #cbd5e1; border-radius:6px; font-weight:bold; color:#1e293b;" onchange="renderDashboard()">
-                </div>
-                <div class="dash-container" id="dashContainer"></div>
-            </div>
-
             <div class="grid-layout">
                 <div class="card">
                     <div class="card-title">근태 및 휴가 상신 등록</div>
@@ -122,6 +125,7 @@
                                 <option value="반차">반차</option>
                                 <option value="지각">지각</option>
                                 <option value="조퇴">조퇴</option>
+                                <option value="결근">결근</option>
                             </select>
                         </div>
                         <div class="form-control"><label>연장 근로 (H)</label><input type="number" id="attOvertime" value="0" min="0" max="12" step="0.5"></div>
@@ -145,6 +149,54 @@
             </div>
         </div>
 
+        <!-- 2️⃣ 섹션: 근태 확인 (통계 및 대시보드) -->
+        <div id="section-att-check" class="erp-section">
+            
+            <!-- 📈 일일 부서별 근태 현황 (막대그래프) -->
+            <div class="card">
+                <div class="card-title">
+                    <span>📊 일일 부서별 인원 현황</span>
+                    <input type="date" id="dashDate" style="padding:6px 12px; border:2px solid #cbd5e1; border-radius:6px; font-weight:bold; color:#1e293b;" onchange="renderAllTables()">
+                </div>
+                <div class="dash-container" id="dashContainer"></div>
+            </div>
+
+            <div class="grid-layout">
+                <!-- 📅 월별 부서 인원 누적 현황 -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>📅 월별 부서 현황</span>
+                        <input type="month" id="statMonthDept" style="padding:4px 8px; border-radius:4px; border:1px solid #cbd5e1;" onchange="renderAllTables()">
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>부서명</th><th class="text-right">출근</th><th class="text-right">휴가/반차</th><th class="text-right">조퇴/지각</th><th class="text-right">결근</th></tr>
+                            </thead>
+                            <tbody id="monthlyDeptTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 👤 직원별 개인 상세 조회 -->
+                <div class="card">
+                    <div class="card-title">👤 직원 상세 조회</div>
+                    <div class="filter-box">
+                        <input type="month" id="statMonthEmp" style="flex:1;" onchange="renderAllTables()">
+                        <select id="statEmpSelect" style="flex:2;" onchange="renderAllTables()"></select>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card"><h3>월 근무시간</h3><p class="value" id="statWorkHours" style="color:#0d9488;">0 H</p></div>
+                        <div class="stat-card"><h3>연차/반차</h3><p class="value" id="statVacation">0 회</p></div>
+                        <div class="stat-card"><h3>조퇴/지각</h3><p class="value" id="statEarly">0 회</p></div>
+                        <div class="stat-card"><h3>결근</h3><p class="value" id="statAbsence" style="color:#ef4444;">0 회</p></div>
+                    </div>
+                    <p style="font-size:11px; color:#94a3b8; text-align:right; margin-top:10px;">* 정상출근 8H, 반차 4H 기준으로 연장근로를 합산하여 계산됩니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3️⃣ 섹션: 직원 등록 -->
         <div id="section-emp-reg" class="erp-section">
             <div class="grid-layout">
                 <div class="card">
@@ -183,6 +235,7 @@
             </div>
         </div>
 
+        <!-- 4️⃣ 섹션: 아이디 부여 -->
         <div id="section-id-assign" class="erp-section">
             <div class="grid-layout">
                 <div class="card">
@@ -225,8 +278,6 @@
 
     </div>
 
-    <datalist id="masterItemDatalist"></datalist>
-
     <script>
         const EMP_STORAGE_KEY = 'standalone_emp_data';
         const ATT_STORAGE_KEY = 'standalone_attendance_data';
@@ -235,7 +286,7 @@
         let attendanceData = JSON.parse(localStorage.getItem(ATT_STORAGE_KEY)) || [];
         let loggedInUser = null;
 
-        // 초기 데이터 세팅 (자재, 기획, 영업, 사출 초기 가상멤버 배치)
+        // 초기 데이터 세팅
         if (empData.length === 0) {
             empData.push({ id: "admin", pw: "1234", dept: "관리", pos: "대표", name: "최고관리자", hasId: true });
             empData.push({ id: "EMP_1", dept: "영업", pos: "사원", name: "김영업", hasId: false });
@@ -245,9 +296,14 @@
             localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
         }
 
+        // 초기 날짜 세팅 헬퍼
         const getToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+        const getTodayMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
+        
         document.getElementById("attDate").value = getToday();
         document.getElementById("dashDate").value = getToday();
+        document.getElementById("statMonthDept").value = getTodayMonth();
+        document.getElementById("statMonthEmp").value = getTodayMonth();
 
         // 🔐 로그인
         document.getElementById("loginForm").addEventListener("submit", function(e) {
@@ -276,7 +332,7 @@
         document.getElementById("btnLogout").addEventListener("click", function() { location.reload(); });
 
         // 🧭 메뉴 전환
-        const menus = ["menu-attendance", "menu-emp-reg", "menu-id-assign"];
+        const menus = ["menu-attendance", "menu-att-check", "menu-emp-reg", "menu-id-assign"];
         menus.forEach(menuId => {
             const el = document.getElementById(menuId);
             if(el) {
@@ -285,24 +341,34 @@
                     this.classList.add("active");
                     document.querySelectorAll(".erp-section").forEach(s => s.style.display = "none");
                     document.getElementById(menuId.replace("menu-", "section-")).style.display = "block";
+                    renderAllTables(); // 메뉴 바꿀때마다 데이터 최신화
                 });
             }
         });
 
-        // 👥 부서별 직원 필터링
+        // 👥 부서별 직원 필터링 (등록폼 & 통계폼 동시 세팅)
         function initEmpSelect() {
-            const sel = document.getElementById("attEmpSelect"); sel.innerHTML = "";
+            const selAtt = document.getElementById("attEmpSelect"); selAtt.innerHTML = "";
+            const selStat = document.getElementById("statEmpSelect"); selStat.innerHTML = "";
+            
             let targetEmps = [];
             if (loggedInUser.id === "admin" || loggedInUser.dept === "관리") targetEmps = empData;
             else targetEmps = empData.filter(e => e.dept === loggedInUser.dept);
 
-            if(targetEmps.length === 0) sel.innerHTML = `<option value="${loggedInUser.name}" data-dept="${loggedInUser.dept}">[${loggedInUser.dept}] ${loggedInUser.name} (본인)</option>`;
-            else targetEmps.forEach(e => sel.innerHTML += `<option value="${e.name}" data-dept="${e.dept}">[${e.dept} - ${e.pos}] ${e.name}</option>`);
+            if(targetEmps.length === 0) {
+                selAtt.innerHTML = `<option value="${loggedInUser.name}" data-dept="${loggedInUser.dept}">[${loggedInUser.dept}] ${loggedInUser.name} (본인)</option>`;
+                selStat.innerHTML = `<option value="${loggedInUser.name}">[${loggedInUser.dept}] ${loggedInUser.name}</option>`;
+            } else {
+                targetEmps.forEach(e => {
+                    selAtt.innerHTML += `<option value="${e.name}" data-dept="${e.dept}">[${e.dept} - ${e.pos}] ${e.name}</option>`;
+                    selStat.innerHTML += `<option value="${e.name}">[${e.dept} - ${e.pos}] ${e.name}</option>`;
+                });
+            }
         }
 
         // 📝 폼 전송 액션들
 
-        // 근태 등록
+        // [근태 상신]
         document.getElementById("attForm").addEventListener("submit", function(e) {
             e.preventDefault(); 
             const empSelect = document.getElementById("attEmpSelect");
@@ -321,7 +387,7 @@
             renderAllTables();
         });
 
-        // 직원 등록
+        // [직원 등록]
         document.getElementById("empRegForm").addEventListener("submit", function(e) {
             e.preventDefault();
             empData.push({ id: "EMP_" + Date.now(), dept: document.getElementById("empRegDept").value, pos: document.getElementById("empRegPos").value, name: document.getElementById("empRegName").value, hasId: false });
@@ -330,7 +396,7 @@
             this.reset(); initEmpSelect(); renderAllTables();
         });
 
-        // 계정 부여
+        // [계정 부여]
         document.getElementById("idAssignForm").addEventListener("submit", function(e) {
             e.preventDefault();
             const inputId = document.getElementById("idAssignId").value;
@@ -359,24 +425,31 @@
             }
         };
 
-        // 📊 테이블 전체 제어
-        function renderAllTables() {
-            renderDashboard();
+        // 📊 화면 갱신 렌더링
+        window.renderAllTables = function() {
+            renderMyHistory();     // 근태등록 -> 개인 상신이력
+            renderEmpLists();      // 직원등록, 계정부여 목록
+            renderAttCheckDash();  // 근태확인 -> 일일 막대그래프
+            renderAttCheckMonthly();// 근태확인 -> 월간 부서 현황
+            renderAttCheckEmp();   // 근태확인 -> 월간 개인 상세조회
+        };
 
+        function renderMyHistory() {
             const attBody = document.getElementById("myAttTableBody");
-            if(attBody) {
-                attBody.innerHTML = "";
-                let displayData = attendanceData;
-                if (loggedInUser.id !== "admin") displayData = attendanceData.filter(a => a.regById === loggedInUser.id || a.dept === loggedInUser.dept);
-                
-                if(displayData.length === 0) attBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">데이터가 없습니다.</td></tr>`;
-                else {
-                    [...displayData].reverse().forEach(r => {
-                        attBody.innerHTML += `<tr><td>${r.date}</td><td><span style="font-weight:bold; color:#115e59;">${r.dept}</span></td><td>${r.name}</td><td><strong>${r.type}</strong></td><td class="text-right">${r.overtime > 0 ? r.overtime : "-"}</td><td><span class="badge badge-approved">${r.status}</span></td><td><button class="btn-danger" onclick="deleteAtt(${r.id})">삭제</button></td></tr>`;
-                    });
-                }
+            if(!attBody) return;
+            attBody.innerHTML = "";
+            let displayData = attendanceData;
+            if (loggedInUser.id !== "admin") displayData = attendanceData.filter(a => a.regById === loggedInUser.id || a.dept === loggedInUser.dept);
+            
+            if(displayData.length === 0) attBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">데이터가 없습니다.</td></tr>`;
+            else {
+                [...displayData].reverse().forEach(r => {
+                    attBody.innerHTML += `<tr><td>${r.date}</td><td><span style="font-weight:bold; color:#115e59;">${r.dept}</span></td><td>${r.name}</td><td><strong>${r.type}</strong></td><td class="text-right">${r.overtime > 0 ? r.overtime : "-"}</td><td><span class="badge badge-approved">${r.status}</span></td><td><button class="btn-danger" onclick="deleteAtt(${r.id})">삭제</button></td></tr>`;
+                });
             }
+        }
 
+        function renderEmpLists() {
             const empBody = document.getElementById("empListTableBody");
             if(empBody) {
                 empBody.innerHTML = "";
@@ -385,7 +458,6 @@
                     empBody.innerHTML += `<tr><td><strong>${e.dept}</strong></td><td>${e.pos}</td><td>${e.name}</td><td>${idStatus}</td><td><button class="btn-danger" onclick="deleteEmp('${e.id}')">삭제</button></td></tr>`;
                 });
             }
-
             const idBody = document.getElementById("idListTableBody");
             if(idBody) {
                 idBody.innerHTML = "";
@@ -395,14 +467,14 @@
             }
         }
 
-        // 📈 세로 막대 스케치 대시보드 렌더링
-        window.renderDashboard = function() {
+        // 📈 일일 부서별 근태 현황 (막대그래프)
+        function renderAttCheckDash() {
             const dDate = document.getElementById("dashDate").value;
             const container = document.getElementById("dashContainer");
+            if(!container) return;
             container.innerHTML = "";
 
             const activeDepts = [...new Set(empData.map(e => e.dept))].filter(d => d !== "관리" && d !== "전체");
-            
             if(activeDepts.length === 0) {
                 container.innerHTML = "<div style='color:#64748b; font-size:13px; padding:10px;'>부서를 먼저 등록해주세요.</div>";
                 return;
@@ -410,12 +482,11 @@
 
             activeDepts.forEach(dept => {
                 let present = 0, vacation = 0, leave = 0;
-
                 attendanceData.forEach(a => {
                     if (a.date === dDate && a.dept === dept) {
                         if (a.type === "출근") present++;
                         else if (a.type === "연차" || a.type === "반차") vacation++;
-                        else if (a.type === "조퇴" || a.type === "지각") leave++;
+                        else if (a.type === "조퇴" || a.type === "지각" || a.type === "결근") leave++;
                     }
                 });
 
@@ -427,29 +498,71 @@
                 container.innerHTML += `
                     <div class="dash-dept-card">
                         <div class="dash-bars">
-                            <div class="bar-col">
-                                <div class="bar-val" style="color:#0f172a;">${present > 0 ? present : ''}</div>
-                                <div class="bar" style="height:${pHeight}%; background-color:#0f172a;"></div>
-                            </div>
-                            <div class="bar-col">
-                                <div class="bar-val" style="color:#3b82f6;">${vacation > 0 ? vacation : ''}</div>
-                                <div class="bar" style="height:${vHeight}%; background-color:#3b82f6;"></div>
-                            </div>
-                            <div class="bar-col">
-                                <div class="bar-val" style="color:#f59e0b;">${leave > 0 ? leave : ''}</div>
-                                <div class="bar" style="height:${lHeight}%; background-color:#f59e0b;"></div>
-                            </div>
+                            <div class="bar-col"><div class="bar-val" style="color:#0f172a;">${present > 0 ? present : ''}</div><div class="bar" style="height:${pHeight}%; background-color:#0f172a;"></div></div>
+                            <div class="bar-col"><div class="bar-val" style="color:#3b82f6;">${vacation > 0 ? vacation : ''}</div><div class="bar" style="height:${vHeight}%; background-color:#3b82f6;"></div></div>
+                            <div class="bar-col"><div class="bar-val" style="color:#f59e0b;">${leave > 0 ? leave : ''}</div><div class="bar" style="height:${lHeight}%; background-color:#f59e0b;"></div></div>
                         </div>
                         <div style="display:flex; gap:8px; width:100%; justify-content:center;">
-                            <div class="bar-label">출근</div>
-                            <div class="bar-label">휴가</div>
-                            <div class="bar-label">조퇴</div>
+                            <div class="bar-label">출근</div><div class="bar-label">휴가</div><div class="bar-label">조퇴등</div>
                         </div>
                         <div class="dash-dept-name">${dept}</div>
                     </div>
                 `;
             });
-        };
+        }
+
+        // 📅 월별 부서 인원 누적 현황 테이블
+        function renderAttCheckMonthly() {
+            const mMonth = document.getElementById("statMonthDept").value;
+            const tbody = document.getElementById("monthlyDeptTableBody");
+            if(!tbody || !mMonth) return;
+            tbody.innerHTML = "";
+
+            const activeDepts = [...new Set(empData.map(e => e.dept))].filter(d => d !== "관리" && d !== "전체");
+            activeDepts.forEach(dept => {
+                let present = 0, vac = 0, leave = 0, abs = 0;
+                attendanceData.forEach(a => {
+                    if(a.date.startsWith(mMonth) && a.dept === dept) {
+                        if(a.type === "출근") present++;
+                        if(a.type === "연차" || a.type === "반차") vac++;
+                        if(a.type === "조퇴" || a.type === "지각") leave++;
+                        if(a.type === "결근") abs++;
+                    }
+                });
+                tbody.innerHTML += `<tr><td><strong>${dept}</strong></td><td class="text-right">${present}</td><td class="text-right">${vac}</td><td class="text-right">${leave}</td><td class="text-right" style="color:#ef4444; font-weight:bold;">${abs}</td></tr>`;
+            });
+        }
+
+        // 👤 개인 상세 월간 근태 조회
+        function renderAttCheckEmp() {
+            const mMonth = document.getElementById("statMonthEmp").value;
+            const empName = document.getElementById("statEmpSelect").value;
+            
+            if(!mMonth || !empName) return;
+
+            let workHours = 0;
+            let vacation = 0;
+            let early = 0;
+            let absence = 0;
+
+            attendanceData.forEach(a => {
+                if(a.date.startsWith(mMonth) && a.name === empName) {
+                    if(a.type === "출근") workHours += 8;
+                    if(a.type === "반차") workHours += 4;
+                    if(a.type === "연차" || a.type === "반차") vacation++;
+                    if(a.type === "조퇴" || a.type === "지각") early++;
+                    if(a.type === "결근") absence++;
+                    
+                    workHours += parseFloat(a.overtime || 0);
+                }
+            });
+
+            document.getElementById("statWorkHours").innerText = `${workHours} H`;
+            document.getElementById("statVacation").innerText = `${vacation} 회`;
+            document.getElementById("statEarly").innerText = `${early} 회`;
+            document.getElementById("statAbsence").innerText = `${absence} 회`;
+        }
+
     </script>
 </body>
 </html>
