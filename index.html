@@ -3,28 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>장운산업 독립형 근태 시스템</title>
+    <title>JW 장운산업 근태 시스템</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         
-        /* 로그인 화면 */
-        .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; flex-direction: column; background: linear-gradient(135deg, #0f172a 0%, #115e59 100%); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; }
+        /* 🔐 로그인 화면 */
+        .login-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; flex-direction: column; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #115e59 100%); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; }
         .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); width: 100%; max-width: 400px; text-align: center; }
         .system-title { font-size: 28px; font-weight: 900; color: #115e59; margin-bottom: 5px; letter-spacing: -1px; }
         .system-subtitle { font-size: 13px; color: #0d9488; font-weight: bold; margin-bottom: 25px; letter-spacing: 1px; }
         
-        /* 메인 화면 */
+        /* ⚙️ 메인 화면 공통 */
         #attendance-main-content { display: none; max-width: 1200px; margin: 0 auto; }
         .main-header { background: #115e59; color: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .main-header h1 { margin: 0; font-size: 20px; font-weight: bold; }
         .btn-logout { background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; }
         
+        /* 🧭 상단 메뉴 네비게이션 */
+        .erp-nav { display: flex; gap: 8px; background: #e2e8f0; padding: 8px; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .nav-item { padding: 10px 14px; background: white; border-radius: 6px; font-weight: bold; font-size: 14px; color: #475569; cursor: pointer; border: 1px solid #cbd5e1; transition: all 0.2s; }
+        .nav-item.active { background: #115e59; color: white; border-color: #115e59; }
+
+        .erp-section { display: none; }
+        
+        /* 📊 그리드 및 카드 */
         .grid-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
         @media (max-width: 768px) { .grid-layout { grid-template-columns: 1fr; } }
         
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; height: fit-content; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; height: fit-content; margin-bottom: 20px; }
         .card-title { font-size: 16px; font-weight: bold; color: #115e59; margin-bottom: 20px; border-left: 4px solid #0d9488; padding-left: 10px; }
         
+        /* 📝 폼 스타일 */
         .form-control { display: flex; flex-direction: column; margin-bottom: 16px; }
         .form-control label { font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: bold; }
         .form-control input, .form-control select { padding: 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; width: 100%; }
@@ -34,6 +43,7 @@
         .btn-submit:hover { background-color: #0f766e; }
         .btn-danger { background-color: #ef4444; padding: 4px 8px; font-size: 11px; color: white; border: none; border-radius: 4px; cursor: pointer; }
         
+        /* 📋 테이블 스타일 */
         .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; min-width: 500px; }
         th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; }
@@ -48,87 +58,166 @@
 </head>
 <body>
 
-    <!-- 🔐 근태 전용 로그인 섹션 -->
     <div id="login-section" class="login-wrapper">
         <div class="login-card">
             <div class="system-title">JW 장운산업</div>
-            <div class="system-subtitle">독립형 근태/휴가 등록 시스템</div>
+            <div class="system-subtitle">근태/휴가 등록 시스템</div>
             <form id="loginForm">
-                <div class="form-control" style="text-align: left;"><label>사내 아이디 (ID)</label><input type="text" id="userId" placeholder="예: 1001 또는 admin" required></div>
-                <div class="form-control" style="text-align: left;"><label>비밀번호 (Password)</label><input type="password" id="userPw" value="1234" required></div>
-                <button type="submit" class="btn-submit">인증 및 로그인</button>
+                <div class="form-control" style="text-align: left;">
+                    <label>사내 아이디 (ID)</label>
+                    <input type="text" id="userId" required>
+                </div>
+                <div class="form-control" style="text-align: left;">
+                    <label>비밀번호 (Password)</label>
+                    <input type="password" id="userPw" value="1234" required>
+                </div>
+                <button type="submit" class="btn-submit" style="background:#115e59;">인증 및 로그인</button>
             </form>
-            <div style="margin-top: 20px; font-size: 11px; color: #94a3b8; text-align: left;">
-                * 테스트용 ID 안내: <br>
-                - admin (최고관리자)<br>
-                - 1001 (사출부 사원)<br>
-                - 1002 (조립부 조장)
-            </div>
         </div>
     </div>
 
-    <!-- ⚙️ 메인 공간 -->
     <div id="attendance-main-content">
         <div class="main-header">
             <h1 id="welcome-title">장운산업 근태 시스템</h1>
             <button class="btn-logout" id="btnLogout">로그아웃</button>
         </div>
 
-        <div class="grid-layout">
-            <!-- 📝 상신 폼 -->
-            <div class="card">
-                <div class="card-title">근태 및 휴가 등록</div>
-                <form id="attForm">
-                    <div class="form-control">
-                        <label>대상자 성명 (자동 세팅)</label>
-                        <select id="attEmpSelect" required></select>
-                    </div>
-                    <div class="form-control"><label>일자</label><input type="date" id="attDate" required></div>
-                    <div class="form-control">
-                        <label>근태 구분</label>
-                        <select id="attType">
-                            <option value="출근" selected>정상 출근</option>
-                            <option value="연차">연차(휴가)</option>
-                            <option value="반차">반차</option>
-                            <option value="지각">지각</option>
-                            <option value="조퇴">조퇴</option>
-                        </select>
-                    </div>
-                    <div class="form-control"><label>연장 근로 (H)</label><input type="number" id="attOvertime" value="0" min="0" max="12" step="0.5"></div>
-                    <button type="submit" class="btn-submit">근태 제출하기</button>
-                </form>
-            </div>
+        <div class="erp-nav">
+            <div class="nav-item active" id="menu-attendance">근태등록</div>
+            <div class="nav-item" id="menu-emp-reg">직원등록</div>
+            <div class="nav-item" id="menu-id-assign" style="display:none;">아이디부여(관리자용)</div>
+        </div>
 
-            <!-- 📊 이력 장부 -->
-            <div class="card">
-                <div class="card-title">근태 등록 이력 (수정/삭제 가능)</div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr><th>일자</th><th>소속부서</th><th>성명</th><th>구분</th><th>연장(H)</th><th>진행상태</th><th>관리</th></tr>
-                        </thead>
-                        <tbody id="myAttTableBody">
-                            <tr><td colspan="7" style="text-align:center; color:#94a3b8;">데이터가 없습니다.</td></tr>
-                        </tbody>
-                    </table>
+        <div id="section-attendance" class="erp-section" style="display:block;">
+            <div class="grid-layout">
+                <div class="card">
+                    <div class="card-title">근태 및 휴가 상신 등록</div>
+                    <form id="attForm">
+                        <div class="form-control">
+                            <label>대상자 성명 (소속 부서원만 표기됨)</label>
+                            <select id="attEmpSelect" required></select>
+                        </div>
+                        <div class="form-control"><label>대상 일자</label><input type="date" id="attDate" required></div>
+                        <div class="form-control">
+                            <label>근태 구분</label>
+                            <select id="attType">
+                                <option value="출근" selected>정상 출근</option>
+                                <option value="연차">연차(휴가)</option>
+                                <option value="반차">반차</option>
+                                <option value="지각">지각</option>
+                                <option value="조퇴">조퇴</option>
+                            </select>
+                        </div>
+                        <div class="form-control"><label>연장 근로 (H)</label><input type="number" id="attOvertime" value="0" min="0" max="12" step="0.5"></div>
+                        <button type="submit" class="btn-submit">근태 제출하기</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">근태 등록 이력 (수정/삭제 가능)</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>일자</th><th>소속부서</th><th>성명</th><th>구분</th><th>연장(H)</th><th>상태</th><th>관리</th></tr>
+                            </thead>
+                            <tbody id="myAttTableBody">
+                                <tr><td colspan="7" style="text-align:center; color:#94a3b8;">데이터가 없습니다.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <div id="section-emp-reg" class="erp-section">
+            <div class="grid-layout">
+                <div class="card">
+                    <div class="card-title">부서원 직원 등록</div>
+                    <form id="empRegForm">
+                        <div class="form-control">
+                            <label>소속 부서</label>
+                            <select id="empRegDept" required>
+                                <option value="사출">사출</option>
+                                <option value="조립">조립</option>
+                                <option value="GSC">GSC</option>
+                                <option value="포장">포장</option>
+                                <option value="품질">품질</option>
+                                <option value="영업">영업</option>
+                                <option value="관리">관리</option>
+                            </select>
+                        </div>
+                        <div class="form-control"><label>직급</label><input type="text" id="empRegPos" placeholder="예: 사원, 조장, 반장" required></div>
+                        <div class="form-control"><label>성명</label><input type="text" id="empRegName" required></div>
+                        <button type="submit" class="btn-submit">직원 명부 등록</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">등록된 전체 직원 명부</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>부서</th><th>직급</th><th>성명</th><th>접속ID 유무</th><th>관리</th></tr>
+                            </thead>
+                            <tbody id="empListTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-id-assign" class="erp-section">
+            <div class="grid-layout">
+                <div class="card">
+                    <div class="card-title">관리자(부서장) 아이디 부여</div>
+                    <form id="idAssignForm">
+                        <div class="form-control"><label>로그인 아이디 (ID)</label><input type="text" id="idAssignId" placeholder="예: admin, 1001" required></div>
+                        <div class="form-control">
+                            <label>소속 부서</label>
+                            <select id="idAssignDept" required>
+                                <option value="관리">관리(전체권한)</option>
+                                <option value="사출">사출</option>
+                                <option value="조립">조립</option>
+                                <option value="GSC">GSC</option>
+                                <option value="포장">포장</option>
+                                <option value="품질">품질</option>
+                            </select>
+                        </div>
+                        <div class="form-control"><label>직급</label><input type="text" id="idAssignPos" placeholder="예: 공장장, 부서장, 조장" required></div>
+                        <div class="form-control"><label>성명</label><input type="text" id="idAssignName" required></div>
+                        <p style="font-size:11px; color:#64748b;">* 부여된 아이디의 초기 비밀번호는 1234 입니다.</p>
+                        <button type="submit" class="btn-submit" style="background:#1e3a8a;">아이디(계정) 발급</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-title">발급된 계정 목록</div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr><th>아이디(ID)</th><th>부서</th><th>직급</th><th>성명</th><th>관리</th></tr>
+                            </thead>
+                            <tbody id="idListTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // 💡 1. 100% 독립 데이터 세팅 (파이어베이스 연동 없음)
-        // 테스트를 위해 가상의 직원 명부를 미리 넣어둡니다.
-        const dummyEmployees = [
-            { id: "admin", name: "최고관리자", dept: "관리", role: "admin", pos: "대표" },
-            { id: "1001", name: "김근태", dept: "사출", role: "user", pos: "사원" },
-            { id: "1002", name: "박조립", dept: "조립", role: "jojang", pos: "조장" }
-        ];
-
-        // 브라우저 로컬 스토리지에 독립적인 키값 사용
-        const STORAGE_KEY = 'standalone_attendance_data';
-        let attendanceData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        // 💡 1. 로컬 스토리지 키 설정 (독립형)
+        const EMP_STORAGE_KEY = 'standalone_emp_data';
+        const ATT_STORAGE_KEY = 'standalone_attendance_data';
+        
+        let empData = JSON.parse(localStorage.getItem(EMP_STORAGE_KEY)) || [];
+        let attendanceData = JSON.parse(localStorage.getItem(ATT_STORAGE_KEY)) || [];
         let loggedInUser = null;
+
+        // 최초 실행 시 최고관리자 계정이 없으면 자동 생성
+        if (empData.length === 0) {
+            empData.push({ id: "admin", pw: "1234", dept: "관리", pos: "대표", name: "최고관리자", hasId: true });
+            localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
+        }
 
         // 초기 날짜 오늘로 세팅
         const getToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -136,21 +225,27 @@
 
         // 🔐 2. 로그인 로직 (e.preventDefault 적용 완료)
         document.getElementById("loginForm").addEventListener("submit", function(e) {
-            e.preventDefault(); // 튕김 방지
+            e.preventDefault();
             const uid = document.getElementById("userId").value;
             const upw = document.getElementById("userPw").value;
 
-            // 비밀번호는 모두 1234로 통일하여 테스트
-            const user = dummyEmployees.find(emp => emp.id === uid);
+            const user = empData.find(emp => emp.id === uid && emp.hasId === true);
             
-            if (user && upw === "1234") {
-                loggedInUser = user;
+            // 초기 테스트 편의를 위해 임시로 admin/1234 강제 허용
+            if ((uid === "admin" && upw === "1234") || (user && upw === "1234")) {
+                loggedInUser = user || { id: "admin", name: "최고관리자", dept: "관리", pos: "대표", hasId: true };
+                
                 document.getElementById("login-section").style.display = "none";
                 document.getElementById("attendance-main-content").style.display = "block";
-                document.getElementById("welcome-title").innerText = `장운산업 근태 시스템 [${loggedInUser.dept} - ${loggedInUser.name}]`;
+                document.getElementById("welcome-title").innerText = `장운산업 근태 시스템 [${loggedInUser.dept}부 - ${loggedInUser.name}]`;
+                
+                // 최고관리자(admin)일 경우에만 '아이디부여' 메뉴 표시
+                if(loggedInUser.id === 'admin') {
+                    document.getElementById("menu-id-assign").style.display = "block";
+                }
                 
                 initEmpSelect();
-                renderRecords();
+                renderAllTables();
             } else {
                 alert("존재하지 않는 아이디이거나 비밀번호가 틀렸습니다.");
             }
@@ -159,30 +254,51 @@
         // 로그아웃
         document.getElementById("btnLogout").addEventListener("click", function() { location.reload(); });
 
-        // 👥 3. 부서별 대상자 세팅
+        // 🧭 3. 메뉴 이동 로직
+        const menus = ["menu-attendance", "menu-emp-reg", "menu-id-assign"];
+        menus.forEach(menuId => {
+            const el = document.getElementById(menuId);
+            if(el) {
+                el.addEventListener("click", function() {
+                    // 탭 활성화 변경
+                    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+                    this.classList.add("active");
+                    
+                    // 섹션 숨김 및 표시
+                    document.querySelectorAll(".erp-section").forEach(s => s.style.display = "none");
+                    const sectionId = menuId.replace("menu-", "section-");
+                    document.getElementById(sectionId).style.display = "block";
+                });
+            }
+        });
+
+        // 👥 4. 부서별 대상자 세팅 (부서장 기능 핵심)
         function initEmpSelect() {
             const sel = document.getElementById("attEmpSelect");
             sel.innerHTML = "";
             
-            // 관리자는 전 직원, 조장은 같은 부서원, 일반 사원은 자기 자신만
+            // 로그인한 사람의 '부서'와 동일한 직원만 필터링 (최고관리자는 전체)
             let targetEmps = [];
-            if (loggedInUser.role === "admin") {
-                targetEmps = dummyEmployees;
-            } else if (loggedInUser.role === "jojang") {
-                targetEmps = dummyEmployees.filter(e => e.dept === loggedInUser.dept);
+            if (loggedInUser.id === "admin" || loggedInUser.dept === "관리") {
+                targetEmps = empData;
             } else {
-                targetEmps = [loggedInUser];
+                targetEmps = empData.filter(e => e.dept === loggedInUser.dept);
             }
 
-            targetEmps.forEach(e => {
-                sel.innerHTML += `<option value="${e.name}" data-dept="${e.dept}">[${e.dept}] ${e.name}</option>`;
-            });
+            if(targetEmps.length === 0) {
+                sel.innerHTML = `<option value="${loggedInUser.name}" data-dept="${loggedInUser.dept}">[${loggedInUser.dept}] ${loggedInUser.name} (본인)</option>`;
+            } else {
+                targetEmps.forEach(e => {
+                    sel.innerHTML += `<option value="${e.name}" data-dept="${e.dept}">[${e.dept} - ${e.pos}] ${e.name}</option>`;
+                });
+            }
         }
 
-        // 📝 4. 근태 제출 상신 로직 (e.preventDefault 적용 완료)
+        // 📝 5. 폼 제출 로직 모음
+
+        // [근태 상신]
         document.getElementById("attForm").addEventListener("submit", function(e) {
-            e.preventDefault(); // 튕김 방지
-            
+            e.preventDefault(); 
             const empSelect = document.getElementById("attEmpSelect");
             if(empSelect.selectedIndex < 0) return;
             const selectedOption = empSelect.options[empSelect.selectedIndex];
@@ -195,64 +311,144 @@
                 dept: selectedOption.getAttribute('data-dept'),
                 type: document.getElementById("attType").value,
                 overtime: parseFloat(document.getElementById("attOvertime").value) || 0,
-                status: "대기" // 독립 버전이므로 대기로 픽스
+                status: "승인완료" // 독립 버전이므로 부서장이 올리면 즉시 승인 처리
             };
 
-            // 데이터 배열에 넣고 로컬스토리지 저장
             attendanceData.push(newRecord);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(attendanceData));
+            localStorage.setItem(ATT_STORAGE_KEY, JSON.stringify(attendanceData));
             
-            alert("근태 등록이 완료되었습니다.");
-            document.getElementById("attOvertime").value = "0"; // 시간만 초기화
-            renderRecords();
+            alert(`${selectedOption.value} 직원의 근태가 등록되었습니다.`);
+            document.getElementById("attOvertime").value = "0"; 
+            renderAllTables();
         });
 
-        // 🗑️ 5. 삭제 기능 (잘못 등록했을 때 지울 수 있게)
+        // [직원 등록] (ID 없는 일반 현장직원)
+        document.getElementById("empRegForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const newEmp = {
+                id: "EMP_" + Date.now(),
+                dept: document.getElementById("empRegDept").value,
+                pos: document.getElementById("empRegPos").value,
+                name: document.getElementById("empRegName").value,
+                hasId: false // 로그인 권한 없음
+            };
+            empData.push(newEmp);
+            localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
+            alert("현장 직원이 명부에 등록되었습니다.");
+            this.reset();
+            initEmpSelect(); // 부서원 목록 갱신
+            renderAllTables();
+        });
+
+        // [아이디 부여] (로그인 가능한 부서장/관리자)
+        document.getElementById("idAssignForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const inputId = document.getElementById("idAssignId").value;
+            
+            // 아이디 중복 검사
+            if(empData.find(e => e.id === inputId && e.hasId === true)) {
+                alert("이미 사용중인 아이디입니다."); return;
+            }
+
+            const newAccount = {
+                id: inputId,
+                pw: "1234",
+                dept: document.getElementById("idAssignDept").value,
+                pos: document.getElementById("idAssignPos").value,
+                name: document.getElementById("idAssignName").value,
+                hasId: true // 로그인 권한 부여됨
+            };
+            empData.push(newAccount);
+            localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
+            alert(`[${inputId}] 아이디가 발급되었습니다. (비밀번호: 1234)`);
+            this.reset();
+            initEmpSelect();
+            renderAllTables();
+        });
+
+        // 🗑️ 6. 삭제 기능 로직
         window.deleteAtt = function(id) {
-            if(confirm("이 근태 기록을 완전히 삭제하시겠습니까?")) {
+            if(confirm("이 근태 기록을 삭제하시겠습니까?")) {
                 attendanceData = attendanceData.filter(a => a.id !== id);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(attendanceData));
-                renderRecords();
+                localStorage.setItem(ATT_STORAGE_KEY, JSON.stringify(attendanceData));
+                renderAllTables();
             }
         };
 
-        // 📊 6. 장부 렌더링 로직
-        function renderRecords() {
-            const tbody = document.getElementById("myAttTableBody");
-            if(!tbody) return;
-            tbody.innerHTML = "";
-
-            // 권한에 따른 데이터 필터링
-            // 관리자: 전체 다 보임 / 그 외: 자기가 등록한 것 + 자기 이름으로 등록된 것
-            let displayData = attendanceData;
-            if (loggedInUser.role !== "admin") {
-                displayData = attendanceData.filter(a => a.regById === loggedInUser.id || a.name === loggedInUser.name);
+        window.deleteEmp = function(id) {
+            if(id === 'admin') { alert("최고관리자 계정은 삭제할 수 없습니다."); return; }
+            if(confirm("해당 직원을 명부/계정에서 삭제하시겠습니까?")) {
+                empData = empData.filter(e => e.id !== id);
+                localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
+                initEmpSelect();
+                renderAllTables();
             }
-            
-            if(displayData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">등록된 근태 내역이 없습니다.</td></tr>`;
-                return;
+        };
+
+        // 📊 7. 장부 렌더링 로직 통합
+        function renderAllTables() {
+            // 근태 이력 렌더링
+            const attBody = document.getElementById("myAttTableBody");
+            if(attBody) {
+                attBody.innerHTML = "";
+                let displayData = attendanceData;
+                if (loggedInUser.id !== "admin") {
+                    displayData = attendanceData.filter(a => a.regById === loggedInUser.id || a.dept === loggedInUser.dept);
+                }
+                
+                if(displayData.length === 0) {
+                    attBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">등록된 근태 내역이 없습니다.</td></tr>`;
+                } else {
+                    [...displayData].reverse().forEach(r => {
+                        attBody.innerHTML += `
+                            <tr>
+                                <td>${r.date}</td>
+                                <td><span style="font-weight:bold; color:#115e59;">${r.dept}</span></td>
+                                <td>${r.name}</td>
+                                <td><strong>${r.type}</strong></td>
+                                <td class="text-right">${r.overtime > 0 ? r.overtime : "-"}</td>
+                                <td><span class="badge badge-approved">${r.status}</span></td>
+                                <td><button class="btn-danger" onclick="deleteAtt(${r.id})">삭제</button></td>
+                            </tr>
+                        `;
+                    });
+                }
             }
 
-            // 최신 글이 위로 오도록 역순 출력
-            [...displayData].reverse().forEach(r => {
-                let bColor = "badge-waiting";
-                if(r.status === "1차 승인") bColor = "badge-1st";
-                if(r.status === "최종 승인") bColor = "badge-approved";
-                if(r.status === "반려") bColor = "badge-rejected";
+            // 직원 명부 렌더링
+            const empBody = document.getElementById("empListTableBody");
+            if(empBody) {
+                empBody.innerHTML = "";
+                empData.forEach(e => {
+                    let idStatus = e.hasId ? `<span style="color:#0d9488; font-weight:bold;">O (ID: ${e.id})</span>` : `<span style="color:#94a3b8;">X (현장직)</span>`;
+                    empBody.innerHTML += `
+                        <tr>
+                            <td><strong>${e.dept}</strong></td>
+                            <td>${e.pos}</td>
+                            <td>${e.name}</td>
+                            <td>${idStatus}</td>
+                            <td><button class="btn-danger" onclick="deleteEmp('${e.id}')">삭제</button></td>
+                        </tr>
+                    `;
+                });
+            }
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${r.date}</td>
-                        <td><span style="font-weight:bold; color:#115e59;">${r.dept}</span></td>
-                        <td>${r.name}</td>
-                        <td><strong>${r.type}</strong></td>
-                        <td class="text-right">${r.overtime > 0 ? r.overtime : "-"}</td>
-                        <td><span class="badge ${bColor}">${r.status}</span></td>
-                        <td><button class="btn-danger" onclick="deleteAtt(${r.id})">삭제</button></td>
-                    </tr>
-                `;
-            });
+            // 발급된 아이디 목록 렌더링 (관리자용)
+            const idBody = document.getElementById("idListTableBody");
+            if(idBody) {
+                idBody.innerHTML = "";
+                empData.filter(e => e.hasId).forEach(e => {
+                    idBody.innerHTML += `
+                        <tr>
+                            <td><strong style="color:#1e3a8a;">${e.id}</strong></td>
+                            <td>${e.dept}</td>
+                            <td>${e.pos}</td>
+                            <td>${e.name}</td>
+                            <td><button class="btn-danger" onclick="deleteEmp('${e.id}')">삭제</button></td>
+                        </tr>
+                    `;
+                });
+            }
         }
     </script>
 </body>
