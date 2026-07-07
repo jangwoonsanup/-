@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JW 장운산업 근태 시스템</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         
@@ -72,11 +74,10 @@
 </head>
 <body>
 
-    <!-- 🔐 로그인 섹션 -->
     <div id="login-section" class="login-wrapper">
         <div class="login-card">
             <div class="system-title">JW 장운산업</div>
-            <div class="system-subtitle">근태/휴가 등록 시스템</div>
+            <div class="system-subtitle">클라우드 근태/휴가 시스템</div>
             <form id="loginForm">
                 <div class="form-control" style="text-align: left;">
                     <label>사내 아이디 (ID)</label>
@@ -88,17 +89,16 @@
                 </div>
                 <button type="submit" class="btn-submit" style="background:#115e59;">인증 및 로그인</button>
             </form>
+            <p style="font-size:11px; color:#94a3b8; margin-top:20px;">* 전사 데이터베이스 실시간 동기화 중...</p>
         </div>
     </div>
 
-    <!-- ⚙️ 메인 공간 -->
     <div id="attendance-main-content">
         <div class="main-header">
             <h1 id="welcome-title">장운산업 근태 시스템</h1>
             <button class="btn-logout" id="btnLogout">로그아웃</button>
         </div>
 
-        <!-- 🧭 상단 네비게이션 메뉴 (요청하신 4개로 개편) -->
         <div class="erp-nav">
             <div class="nav-item active" id="menu-attendance">근태등록</div>
             <div class="nav-item" id="menu-att-check">근태확인</div>
@@ -106,7 +106,6 @@
             <div class="nav-item" id="menu-id-assign" style="display:none;">아이디부여(관리자용)</div>
         </div>
 
-        <!-- 1️⃣ 섹션: 근태 등록 -->
         <div id="section-attendance" class="erp-section" style="display:block;">
             <div class="grid-layout">
                 <div class="card">
@@ -149,20 +148,17 @@
             </div>
         </div>
 
-        <!-- 2️⃣ 섹션: 근태 확인 (통계 및 대시보드) -->
         <div id="section-att-check" class="erp-section">
             
-            <!-- 📈 일일 부서별 근태 현황 (막대그래프) -->
             <div class="card">
                 <div class="card-title">
-                    <span>📊 일일 부서별 인원 현황</span>
+                    <span>📊 일일 부서별 인원 현황 (실시간 동기화)</span>
                     <input type="date" id="dashDate" style="padding:6px 12px; border:2px solid #cbd5e1; border-radius:6px; font-weight:bold; color:#1e293b;" onchange="renderAllTables()">
                 </div>
                 <div class="dash-container" id="dashContainer"></div>
             </div>
 
             <div class="grid-layout">
-                <!-- 📅 월별 부서 인원 누적 현황 -->
                 <div class="card">
                     <div class="card-title">
                         <span>📅 월별 부서 현황</span>
@@ -178,7 +174,6 @@
                     </div>
                 </div>
 
-                <!-- 👤 직원별 개인 상세 조회 -->
                 <div class="card">
                     <div class="card-title">👤 직원 상세 조회</div>
                     <div class="filter-box">
@@ -196,7 +191,6 @@
             </div>
         </div>
 
-        <!-- 3️⃣ 섹션: 직원 등록 -->
         <div id="section-emp-reg" class="erp-section">
             <div class="grid-layout">
                 <div class="card">
@@ -235,7 +229,6 @@
             </div>
         </div>
 
-        <!-- 4️⃣ 섹션: 아이디 부여 -->
         <div id="section-id-assign" class="erp-section">
             <div class="grid-layout">
                 <div class="card">
@@ -279,22 +272,22 @@
     </div>
 
     <script>
-        const EMP_STORAGE_KEY = 'standalone_emp_data';
-        const ATT_STORAGE_KEY = 'standalone_attendance_data';
+        // 🔥 파이어베이스 연동 세팅 (장운산업 클라우드 데이터베이스)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6VKMKo8-Q08cOB_znifREfGPgqFVoAJ4",
+            authDomain: "jangwoon-ef9cc.firebaseapp.com",
+            databaseURL: "https://jangwoon-ef9cc-default-rtdb.firebaseio.com",
+            projectId: "jangwoon-ef9cc",
+            storageBucket: "jangwoon-ef9cc.firebasestorage.app",
+            messagingSenderId: "956380401892",
+            appId: "1:956380401892:web:9865061748d5ba1ca01cf1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
         
-        let empData = JSON.parse(localStorage.getItem(EMP_STORAGE_KEY)) || [];
-        let attendanceData = JSON.parse(localStorage.getItem(ATT_STORAGE_KEY)) || [];
+        let empData = [];
+        let attendanceData = [];
         let loggedInUser = null;
-
-        // 초기 데이터 세팅
-        if (empData.length === 0) {
-            empData.push({ id: "admin", pw: "1234", dept: "관리", pos: "대표", name: "최고관리자", hasId: true });
-            empData.push({ id: "EMP_1", dept: "영업", pos: "사원", name: "김영업", hasId: false });
-            empData.push({ id: "EMP_2", dept: "사출", pos: "사원", name: "박사출", hasId: false });
-            empData.push({ id: "EMP_3", dept: "기획", pos: "사원", name: "이기획", hasId: false });
-            empData.push({ id: "EMP_4", dept: "자재", pos: "사원", name: "최자재", hasId: false });
-            localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
-        }
 
         // 초기 날짜 세팅 헬퍼
         const getToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -305,12 +298,32 @@
         document.getElementById("statMonthDept").value = getTodayMonth();
         document.getElementById("statMonthEmp").value = getTodayMonth();
 
+        // 🔥 실시간 데이터베이스 구독 (데이터가 바뀌면 즉시 화면 업데이트)
+        db.ref().on('value', snapshot => {
+            const d = snapshot.val() || {};
+            empData = d.erpAttEmployees || [];
+            attendanceData = d.erpAttendance || [];
+
+            // 최초 1회 실행 시 관리자 계정이 서버에 없으면 생성
+            if (empData.length === 0) {
+                empData.push({ id: "admin", pw: "1234", dept: "관리", pos: "대표", name: "최고관리자", hasId: true });
+                db.ref('erpAttEmployees').set(empData);
+            }
+
+            // 로그인이 되어 있는 상태라면 화면 즉시 갱신
+            if(loggedInUser) {
+                initEmpSelect();
+                renderAllTables();
+            }
+        });
+
         // 🔐 로그인
         document.getElementById("loginForm").addEventListener("submit", function(e) {
             e.preventDefault();
             const uid = document.getElementById("userId").value;
             const upw = document.getElementById("userPw").value;
 
+            // 서버에서 불러온 직원 목록에서 사용자 찾기
             const user = empData.find(emp => emp.id === uid && emp.hasId === true);
             
             if ((uid === "admin" && upw === "1234") || (user && upw === "1234")) {
@@ -341,7 +354,7 @@
                     this.classList.add("active");
                     document.querySelectorAll(".erp-section").forEach(s => s.style.display = "none");
                     document.getElementById(menuId.replace("menu-", "section-")).style.display = "block";
-                    renderAllTables(); // 메뉴 바꿀때마다 데이터 최신화
+                    renderAllTables();
                 });
             }
         });
@@ -366,7 +379,7 @@
             }
         }
 
-        // 📝 폼 전송 액션들
+        // 📝 폼 전송 액션들 (파이어베이스로 전송)
 
         // [근태 상신]
         document.getElementById("attForm").addEventListener("submit", function(e) {
@@ -379,21 +392,22 @@
                 id: Date.now(), regById: loggedInUser.id, date: document.getElementById("attDate").value,
                 name: selectedOption.value, dept: selectedOption.getAttribute('data-dept'),
                 type: document.getElementById("attType").value, overtime: parseFloat(document.getElementById("attOvertime").value) || 0,
-                status: "승인완료"
+                status: "최종 승인" // 메인 ERP 연동을 위해 '최종 승인' 상태로 기록
             });
-            localStorage.setItem(ATT_STORAGE_KEY, JSON.stringify(attendanceData));
+            
+            db.ref('erpAttendance').set(attendanceData); // 서버에 저장
             alert(`${selectedOption.value} 직원의 근태가 등록되었습니다.`);
             document.getElementById("attOvertime").value = "0"; 
-            renderAllTables();
         });
 
         // [직원 등록]
         document.getElementById("empRegForm").addEventListener("submit", function(e) {
             e.preventDefault();
             empData.push({ id: "EMP_" + Date.now(), dept: document.getElementById("empRegDept").value, pos: document.getElementById("empRegPos").value, name: document.getElementById("empRegName").value, hasId: false });
-            localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
+            
+            db.ref('erpAttEmployees').set(empData); // 서버에 저장
             alert("현장 직원이 명부에 등록되었습니다.");
-            this.reset(); initEmpSelect(); renderAllTables();
+            this.reset(); 
         });
 
         // [계정 부여]
@@ -402,17 +416,17 @@
             const inputId = document.getElementById("idAssignId").value;
             if(empData.find(e => e.id === inputId && e.hasId === true)) { alert("이미 사용중인 아이디입니다."); return; }
             empData.push({ id: inputId, pw: "1234", dept: document.getElementById("idAssignDept").value, pos: document.getElementById("idAssignPos").value, name: document.getElementById("idAssignName").value, hasId: true });
-            localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
-            alert(`[${inputId}] 아이디가 발급되었습니다.`);
-            this.reset(); initEmpSelect(); renderAllTables();
+            
+            db.ref('erpAttEmployees').set(empData); // 서버에 저장
+            alert(`[${inputId}] 아이디가 발급되었습니다. (초기 비밀번호: 1234)`);
+            this.reset(); 
         });
 
-        // 🗑️ 데이터 파기
+        // 🗑️ 데이터 파기 (파이어베이스 연동)
         window.deleteAtt = function(id) {
             if(confirm("이 근태 기록을 삭제하시겠습니까?")) {
                 attendanceData = attendanceData.filter(a => a.id !== id);
-                localStorage.setItem(ATT_STORAGE_KEY, JSON.stringify(attendanceData));
-                renderAllTables();
+                db.ref('erpAttendance').set(attendanceData); // 삭제 후 서버 갱신
             }
         };
 
@@ -420,18 +434,17 @@
             if(id === 'admin') { alert("최고관리자 계정은 삭제할 수 없습니다."); return; }
             if(confirm("해당 직원을 삭제하시겠습니까?")) {
                 empData = empData.filter(e => e.id !== id);
-                localStorage.setItem(EMP_STORAGE_KEY, JSON.stringify(empData));
-                initEmpSelect(); renderAllTables();
+                db.ref('erpAttEmployees').set(empData); // 삭제 후 서버 갱신
             }
         };
 
         // 📊 화면 갱신 렌더링
         window.renderAllTables = function() {
-            renderMyHistory();     // 근태등록 -> 개인 상신이력
-            renderEmpLists();      // 직원등록, 계정부여 목록
-            renderAttCheckDash();  // 근태확인 -> 일일 막대그래프
-            renderAttCheckMonthly();// 근태확인 -> 월간 부서 현황
-            renderAttCheckEmp();   // 근태확인 -> 월간 개인 상세조회
+            renderMyHistory();     
+            renderEmpLists();      
+            renderAttCheckDash();  
+            renderAttCheckMonthly();
+            renderAttCheckEmp();   
         };
 
         function renderMyHistory() {
@@ -444,7 +457,8 @@
             if(displayData.length === 0) attBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">데이터가 없습니다.</td></tr>`;
             else {
                 [...displayData].reverse().forEach(r => {
-                    attBody.innerHTML += `<tr><td>${r.date}</td><td><span style="font-weight:bold; color:#115e59;">${r.dept}</span></td><td>${r.name}</td><td><strong>${r.type}</strong></td><td class="text-right">${r.overtime > 0 ? r.overtime : "-"}</td><td><span class="badge badge-approved">${r.status}</span></td><td><button class="btn-danger" onclick="deleteAtt(${r.id})">삭제</button></td></tr>`;
+                    let bColor = r.status==="1차 승인"?"badge-1st":r.status==="최종 승인"?"badge-approved":r.status==="반려"?"badge-rejected":"badge-waiting";
+                    attBody.innerHTML += `<tr><td>${r.date}</td><td><span style="font-weight:bold; color:#115e59;">${r.dept}</span></td><td>${r.name}</td><td><strong>${r.type}</strong></td><td class="text-right">${r.overtime > 0 ? r.overtime : "-"}</td><td><span class="badge ${bColor}">${r.status}</span></td><td><button class="btn-danger" onclick="deleteAtt(${r.id})">삭제</button></td></tr>`;
                 });
             }
         }
